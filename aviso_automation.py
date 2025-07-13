@@ -386,7 +386,7 @@ class GeckoDriverManager:
         return driver_path
 
 class UserAgentManager:
-    """Класс для управления User-Agent для каждого аккаунта - ТОЛЬКО ANDROID И IPAD"""
+    """Класс для управления User-Agent для каждого аккаунта - СЛУЧАЙНЫЕ АГЕНТЫ"""
     
     def __init__(self):
         self.ua_file = "user_agents.json"
@@ -412,114 +412,73 @@ class UserAgentManager:
         except Exception as e:
             logging.error(f"✗ Ошибка сохранения User-Agent'ов: {e}")
     
-    def generate_android_user_agent(self) -> str:
-        """Генерация рандомного Android User-Agent"""
-        # Рандомные версии Android
-        android_versions = [
-            "10", "11", "12", "13", "14", "15"
-        ]
-        
-        # Рандомные модели Android устройств
-        android_devices = [
-            "SM-G991B", "SM-G996B", "SM-G998B",  # Samsung Galaxy S21 серия
-            "SM-A515F", "SM-A525F", "SM-A536B",  # Samsung Galaxy A серия
-            "Pixel 6", "Pixel 7", "Pixel 8", "Pixel 9",  # Google Pixel
-            "CPH2451", "CPH2455", "CPH2459",  # OnePlus
-            "M2101K9G", "M2102K1AC", "M2103K19G",  # Xiaomi
-            "RMX3085", "RMX3241", "RMX3506",  # Realme
-            "LM-G900", "LM-V600", "LM-K520",  # LG
-        ]
-        
-        # Рандомные версии Chrome Mobile
-        chrome_versions = [
-            "119.0.6045.193", "120.0.6099.144", "121.0.6167.165",
-            "122.0.6261.105", "123.0.6312.118", "124.0.6367.207",
-            "125.0.6422.165", "126.0.6478.122", "127.0.6533.107"
-        ]
-        
-        android_version = random.choice(android_versions)
-        device_model = random.choice(android_devices)
-        chrome_version = random.choice(chrome_versions)
-        webkit_version = f"{random.randint(530, 537)}.{random.randint(1, 36)}"
-        
-        user_agent = (
-            f"Mozilla/5.0 (Linux; Android {android_version}; {device_model}) "
-            f"AppleWebKit/{webkit_version} (KHTML, like Gecko) "
-            f"Chrome/{chrome_version} Mobile Safari/{webkit_version}"
-        )
-        
-        return user_agent
-    
-    def generate_ipad_user_agent(self) -> str:
-        """Генерация рандомного iPad User-Agent"""
-        # Рандомные версии iOS для iPad
-        ios_versions = [
-            "15_7", "16_1", "16_2", "16_3", "16_4", "16_5", "16_6", "16_7",
-            "17_0", "17_1", "17_2", "17_3", "17_4", "17_5", "17_6",
-            "18_0", "18_1", "18_2"
-        ]
-        
-        # Рандомные модели iPad
-        ipad_models = [
-            "iPad13,1", "iPad13,2",  # iPad Air 4th gen
-            "iPad13,4", "iPad13,5", "iPad13,6", "iPad13,7",  # iPad Pro 11" 5th gen
-            "iPad13,8", "iPad13,9", "iPad13,10", "iPad13,11",  # iPad Pro 12.9" 5th gen
-            "iPad14,1", "iPad14,2",  # iPad mini 6th gen
-            "iPad14,3", "iPad14,4",  # iPad Air 5th gen
-            "iPad14,5", "iPad14,6",  # iPad Pro 11" 6th gen
-            "iPad16,3", "iPad16,4", "iPad16,5", "iPad16,6",  # iPad Pro M4
-        ]
-        
-        # Рандомные версии Safari
-        safari_versions = [
-            "604.1", "605.1.15", "612.1.6", "613.2.7", "614.1.25",
-            "615.1.26", "616.1.27", "617.2.4", "618.1.15"
-        ]
-        
-        ios_version = random.choice(ios_versions)
-        ipad_model = random.choice(ipad_models)
-        safari_version = random.choice(safari_versions)
-        webkit_version = f"{random.randint(612, 618)}.{random.randint(1, 5)}.{random.randint(1, 30)}"
-        
-        user_agent = (
-            f"Mozilla/5.0 ({ipad_model}; U; CPU OS {ios_version} like Mac OS X) "
-            f"AppleWebKit/{webkit_version} (KHTML, like Gecko) "
-            f"Version/{safari_version} Mobile/15E148 Safari/{safari_version}"
-        )
-        
-        return user_agent
+    def generate_random_user_agent(self) -> str:
+        """Генерация полностью случайного User-Agent"""
+        try:
+            from fake_useragent import UserAgent
+            ua = UserAgent()
+            
+            # Выбираем случайный тип браузера
+            browser_types = ['chrome', 'firefox', 'safari', 'edge', 'opera']
+            browser = random.choice(browser_types)
+            
+            # Генерируем User-Agent для выбранного браузера
+            if browser == 'chrome':
+                user_agent = ua.chrome
+            elif browser == 'firefox':
+                user_agent = ua.firefox
+            elif browser == 'safari':
+                user_agent = ua.safari
+            elif browser == 'edge':
+                user_agent = ua.edge
+            elif browser == 'opera':
+                user_agent = ua.opera
+            else:
+                user_agent = ua.random
+            
+            return user_agent
+            
+        except Exception as e:
+            logging.warning(f"⚠ Ошибка генерации User-Agent: {e}")
+            # Fallback - возвращаем случайный из предустановленных
+            fallback_agents = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0",
+                "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/121.0",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+                "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+            ]
+            return random.choice(fallback_agents)
     
     def get_user_agent(self, username: str) -> str:
-        """Получение User-Agent для конкретного пользователя - ТОЛЬКО ANDROID ИЛИ IPAD"""
+        """Получение User-Agent для конкретного пользователя - СЛУЧАЙНЫЙ"""
         # Создаем уникальный ключ для пользователя
         user_key = hashlib.md5(username.encode()).hexdigest()
         
         if user_key not in self.user_agents:
-            # Рандомно выбираем между Android и iPad (50/50)
-            device_type = random.choice(['android', 'ipad'])
+            # Генерируем полностью случайный User-Agent
+            random_ua = self.generate_random_user_agent()
             
-            if device_type == 'android':
-                mobile_ua = self.generate_android_user_agent()
-                device_name = "Android"
-            else:
-                mobile_ua = self.generate_ipad_user_agent()
-                device_name = "iPad"
-            
-            self.user_agents[user_key] = mobile_ua
+            self.user_agents[user_key] = random_ua
             self.save_user_agents()
-            logging.info(f"🎭 Создан новый {device_name} User-Agent для пользователя {username}")
+            logging.info(f"🎭 Создан новый случайный User-Agent для пользователя {username}")
         
         user_agent = self.user_agents[user_key]
-        device_type = "Android" if "Android" in user_agent else "iPad"
-        logging.info(f"🎭 Используется {device_type} User-Agent для {username}: {user_agent[:50]}...")
+        logging.info(f"🎭 Используется User-Agent для {username}: {user_agent[:80]}...")
         return user_agent
 
 class HumanBehaviorSimulator:
     """Класс для имитации человеческого поведения"""
     
     @staticmethod
-    def random_sleep(min_seconds: float = 0.5, max_seconds: float = 3.0):
-        """Случайная пауза"""
+    def random_sleep(min_seconds: float = 0.1, max_seconds: float = 1.0):
+        """Случайная пауза - УМЕНЬШЕНЫ ЗАДЕРЖКИ"""
         sleep_time = random.uniform(min_seconds, max_seconds)
         logging.debug(f"💤 Пауза {sleep_time:.2f} секунд")
         time.sleep(sleep_time)
@@ -544,7 +503,7 @@ class HumanBehaviorSimulator:
         
         # Генерируем точки кривой
         curve_points = []
-        steps = random.randint(20, 50)
+        steps = random.randint(10, 30)  # Уменьшено для ускорения
         for i in range(steps + 1):
             t = i / steps
             point = bezier_point(t, control_pts)
@@ -556,7 +515,7 @@ class HumanBehaviorSimulator:
     def human_like_typing(element, text: str, driver):
         """Улучшенная имитация человеческого набора текста с опечатками"""
         element.clear()
-        HumanBehaviorSimulator.random_sleep(0.3, 1.0)
+        HumanBehaviorSimulator.random_sleep(0.1, 0.3)  # Уменьшено
         
         # Раскладки клавиатуры для имитации опечаток
         qwerty_neighbors = {
@@ -580,83 +539,64 @@ class HumanBehaviorSimulator:
         while i < len(text):
             char = text[i].lower()
             
-            # Случайные паузы между символами (более реалистичные)
+            # Случайные паузы между символами (более быстрые)
             if char == ' ':
-                pause = random.uniform(0.1, 0.4)  # Длиннее пауза для пробелов
+                pause = random.uniform(0.05, 0.15)  # Уменьшено
             elif char.isdigit():
-                pause = random.uniform(0.08, 0.25)  # Цифры печатаем медленнее
+                pause = random.uniform(0.03, 0.10)  # Уменьшено
             else:
-                pause = random.uniform(0.05, 0.2)
+                pause = random.uniform(0.02, 0.08)  # Уменьшено
             
             time.sleep(pause)
             
-            # Имитация опечаток (8% вероятность)
-            if random.random() < 0.08 and char in qwerty_neighbors:
+            # Имитация опечаток (5% вероятность - уменьшено)
+            if random.random() < 0.05 and char in qwerty_neighbors:
                 # Делаем опечатку
                 wrong_char = random.choice(qwerty_neighbors[char])
                 element.send_keys(wrong_char)
                 typed_text += wrong_char
                 logging.debug(f"🔤 Опечатка: '{wrong_char}' вместо '{char}'")
                 
-                # Пауза перед исправлением (как будто заметили ошибку)
-                time.sleep(random.uniform(0.2, 0.8))
+                # Пауза перед исправлением (уменьшено)
+                time.sleep(random.uniform(0.1, 0.3))
                 
                 # Исправляем опечатку
                 element.send_keys(Keys.BACKSPACE)
                 typed_text = typed_text[:-1]
-                time.sleep(random.uniform(0.1, 0.3))
+                time.sleep(random.uniform(0.05, 0.15))
                 
                 # Печатаем правильный символ
                 element.send_keys(text[i])
                 typed_text += text[i]
                 logging.debug(f"🔤 Исправлено на: '{text[i]}'")
                 
-            # Имитация двойного нажатия (3% вероятность)
-            elif random.random() < 0.03:
+            # Имитация двойного нажатия (1% вероятность - уменьшено)
+            elif random.random() < 0.01:
                 element.send_keys(text[i])
                 element.send_keys(text[i])  # Двойное нажатие
                 typed_text += text[i] + text[i]
                 logging.debug(f"🔤 Двойное нажатие: '{text[i]}'")
                 
                 # Пауза и исправление
-                time.sleep(random.uniform(0.3, 0.7))
-                element.send_keys(Keys.BACKSPACE)
-                typed_text = typed_text[:-1]
-                
-            # Имитация случайного caps lock (только для букв, 2% вероятность)
-            elif random.random() < 0.02 and char.isalpha():
-                if random.choice([True, False]):
-                    wrong_case = text[i].upper() if text[i].islower() else text[i].lower()
-                else:
-                    wrong_case = text[i].upper()
-                
-                element.send_keys(wrong_case)
-                typed_text += wrong_case
-                logging.debug(f"🔤 Неправильный регистр: '{wrong_case}' вместо '{text[i]}'")
-                
-                # Пауза и исправление
-                time.sleep(random.uniform(0.4, 1.0))
-                element.send_keys(Keys.BACKSPACE)
-                typed_text = typed_text[:-1]
                 time.sleep(random.uniform(0.1, 0.3))
-                element.send_keys(text[i])
-                typed_text += text[i]
+                element.send_keys(Keys.BACKSPACE)
+                typed_text = typed_text[:-1]
                 
             else:
                 # Обычное нажатие
                 element.send_keys(text[i])
                 typed_text += text[i]
             
-            # Случайные более длинные паузы (как будто думаем)
-            if random.random() < 0.05:  # 5% вероятность
-                thinking_pause = random.uniform(0.5, 2.0)
+            # Случайные более длинные паузы (уменьшена вероятность)
+            if random.random() < 0.02:  # 2% вероятность
+                thinking_pause = random.uniform(0.2, 0.8)  # Уменьшено
                 logging.debug(f"🤔 Пауза для размышления: {thinking_pause:.2f}с")
                 time.sleep(thinking_pause)
             
             i += 1
         
-        # Финальная пауза после ввода
-        HumanBehaviorSimulator.random_sleep(0.5, 1.5)
+        # Финальная пауза после ввода (уменьшено)
+        HumanBehaviorSimulator.random_sleep(0.2, 0.5)
     
     @staticmethod
     def calculate_reading_time(text: str) -> float:
@@ -1448,6 +1388,9 @@ class AvisoAutomation:
     def check_authorization(self) -> bool:
         """ИСПРАВЛЕННАЯ проверка авторизации через поиск профиля"""
         try:
+            # Даем время для загрузки страницы
+            time.sleep(2)
+            
             # Проверяем наличие блока профиля
             profile_found = self.driver.execute_script("""
                 // Ищем блок с информацией о пользователе
@@ -1468,13 +1411,44 @@ class AvisoAutomation:
                     }
                 }
                 
-                // Альтернативный поиск - проверяем отсутствие форм логина
-                var loginForms = document.querySelectorAll('input[name="username"], input[name="login"]');
+                // Дополнительная проверка - поиск элементов профиля
+                var profileElements = document.querySelectorAll('[class*="user"], [id*="user"], [class*="profile"], [id*="profile"]');
+                var hasProfile = false;
+                
+                for (var i = 0; i < profileElements.length; i++) {
+                    var element = profileElements[i];
+                    var text = element.textContent.toLowerCase();
+                    
+                    // Проверяем на наличие индикаторов авторизации
+                    if (text.includes('профиль') || text.includes('balance') || text.includes('баланс') || 
+                        text.includes('выйти') || text.includes('logout') || text.includes('настройки')) {
+                        hasProfile = true;
+                        break;
+                    }
+                }
+                
+                // Проверяем отсутствие форм логина
+                var loginForms = document.querySelectorAll('input[name="username"], input[name="login"], input[name="password"]');
+                var hasLoginForm = false;
+                
+                for (var i = 0; i < loginForms.length; i++) {
+                    if (loginForms[i].offsetParent !== null) {
+                        hasLoginForm = true;
+                        break;
+                    }
+                }
+                
                 return {
-                    authorized: loginForms.length === 0,
+                    authorized: hasProfile && !hasLoginForm,
                     user_id: null,
                     username: null,
-                    status: null
+                    status: null,
+                    debug: {
+                        hasProfile: hasProfile,
+                        hasLoginForm: hasLoginForm,
+                        url: window.location.href,
+                        title: document.title
+                    }
                 };
             """)
             
@@ -1485,7 +1459,11 @@ class AvisoAutomation:
                     logging.info("✅ Авторизован (профиль найден)")
                 return True
             else:
-                logging.info("❌ Не авторизован - профиль не найден")
+                debug_info = profile_found.get('debug', {})
+                logging.info(f"❌ Не авторизован - URL: {debug_info.get('url', 'unknown')}")
+                logging.info(f"   Заголовок: {debug_info.get('title', 'unknown')}")
+                logging.info(f"   Есть профиль: {debug_info.get('hasProfile', False)}")
+                logging.info(f"   Есть форма логина: {debug_info.get('hasLoginForm', False)}")
                 return False
                 
         except Exception as e:
@@ -1493,31 +1471,67 @@ class AvisoAutomation:
             return False
     
     def login(self) -> bool:
-        """Авторизация"""
+        """ИСПРАВЛЕННАЯ авторизация"""
         logging.info("🔐 Авторизация...")
         
         try:
             self.driver.get(f"{self.base_url}/login")
-            time.sleep(1)
+            time.sleep(3)
             
-            wait = WebDriverWait(self.driver, 300)
+            # Проверяем что мы действительно на странице логина
+            current_url = self.driver.current_url
+            if "/login" not in current_url:
+                logging.error(f"❌ Не удалось перейти на страницу логина. Текущий URL: {current_url}")
+                return False
             
-            username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
+            wait = WebDriverWait(self.driver, 30)
+            
+            # Находим поля для ввода
+            try:
+                username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
+                password_field = self.driver.find_element(By.NAME, "password")
+                login_button = self.driver.find_element(By.ID, "button-login")
+            except Exception as e:
+                logging.error(f"❌ Не найдены элементы формы логина: {e}")
+                return False
+            
+            # Вводим логин
             username_field.click()
+            time.sleep(0.5)
             HumanBehaviorSimulator.human_like_typing(username_field, self.username, self.driver)
             
-            password_field = self.driver.find_element(By.NAME, "password")
+            # Вводим пароль
             password_field.click()
+            time.sleep(0.5)
             HumanBehaviorSimulator.human_like_typing(password_field, self.password, self.driver)
             
-            login_button = self.driver.find_element(By.ID, "button-login")
-            time.sleep(10)
-            login_button.click()
+            # Случайная пауза перед входом
+            pause_time = random.uniform(1, 3)
+            logging.info(f"⏳ Пауза перед входом: {pause_time:.1f}с")
+            time.sleep(pause_time)
             
-            time.sleep(1)
+            # Нажимаем кнопку входа
+            try:
+                login_button.click()
+                logging.info("✅ Нажата кнопка входа")
+            except Exception as e:
+                logging.error(f"❌ Ошибка нажатия кнопки входа: {e}")
+                # Пробуем через JavaScript
+                try:
+                    self.driver.execute_script("arguments[0].click();", login_button)
+                    logging.info("✅ Нажата кнопка входа через JavaScript")
+                except Exception as e2:
+                    logging.error(f"❌ Ошибка нажатия кнопки входа через JavaScript: {e2}")
+                    return False
             
-            # Проверка 2FA
+            # Ждем перенаправления
+            time.sleep(5)
+            
+            # Проверяем URL после входа
             current_url = self.driver.current_url
+            logging.info(f"🔍 URL после входа: {current_url}")
+            
+            # Проверка 2FA если требуется
             if "/2fa" in current_url:
                 logging.info("🔐 Требуется 2FA код")
                 
@@ -1534,7 +1548,7 @@ class AvisoAutomation:
                         if confirm_buttons:
                             confirm_buttons[0].click()
                         
-                        time.sleep(1)
+                        time.sleep(5)
                     
                 except Exception as e:
                     logging.error(f"❌ Ошибка 2FA: {e}")
@@ -1546,7 +1560,17 @@ class AvisoAutomation:
                 self.save_cookies()
                 return True
             else:
-                logging.error("❌ Авторизация не удалась")
+                logging.error("❌ Авторизация не удалась - профиль не найден")
+                
+                # Дополнительная диагностика
+                page_source = self.driver.page_source
+                if "неверный логин" in page_source.lower() or "неверный пароль" in page_source.lower():
+                    logging.error("❌ Неверные учетные данные")
+                elif "заблокирован" in page_source.lower():
+                    logging.error("❌ Аккаунт заблокирован")
+                else:
+                    logging.error("❌ Неизвестная ошибка авторизации")
+                
                 return False
                 
         except Exception as e:
@@ -1600,7 +1624,7 @@ class AvisoAutomation:
                     self.inter_task_pause()
                 else:
                     logging.warning(f"⚠ Задание {task_id} не выполнено, переходим к следующему")
-                    time.sleep(random.uniform(2, 5))
+                    time.sleep(random.uniform(1, 3))  # Уменьшено
             
             logging.info(f"🏁 {task_type}: завершено {completed_tasks} заданий")
             return completed_tasks
@@ -1610,18 +1634,18 @@ class AvisoAutomation:
             return completed_tasks
     
     def inter_task_pause(self):
-        """Пауза между заданиями с имитацией активности"""
-        pause_time = random.uniform(1, 20)
+        """Пауза между заданиями с имитацией активности - УМЕНЬШЕНО"""
+        pause_time = random.uniform(0.5, 8)  # Уменьшено с 1-20 до 0.5-8
         logging.info(f"⏳ Пауза между заданиями {pause_time:.1f}с")
         
         # Разбиваем паузу на интервалы с активностью
-        intervals = max(1, int(pause_time // 10))
+        intervals = max(1, int(pause_time // 5))  # Уменьшено с 10 до 5
         interval_duration = pause_time / intervals
         
         for _ in range(intervals):
-            if random.random() < 0.5:
+            if random.random() < 0.3:  # Уменьшено с 0.5 до 0.3
                 self.random_mouse_movement()
-            if random.random() < 0.3:
+            if random.random() < 0.2:  # Уменьшено с 0.3 до 0.2
                 self.random_scroll()
             time.sleep(interval_duration)
     
@@ -1638,9 +1662,9 @@ class AvisoAutomation:
                 completed = self.execute_tasks_by_type(task_type)
                 results[task_type] = completed
                 
-                # Пауза между типами заданий
+                # Пауза между типами заданий - УМЕНЬШЕНО
                 if not self.task_coordinator.is_cycle_complete():
-                    type_pause = random.uniform(30, 120)
+                    type_pause = random.uniform(10, 60)  # Уменьшено с 30-120 до 10-60
                     logging.info(f"😴 Пауза между типами заданий: {type_pause:.1f}с")
                     time.sleep(type_pause)
         
@@ -1651,43 +1675,77 @@ class AvisoAutomation:
         return results
     
     def random_mouse_movement(self):
-        """Движение мыши"""
+        """Движение мыши - УЛУЧШЕННОЕ"""
         try:
             viewport_size = self.driver.get_window_size()
             max_width = max(100, viewport_size['width'] - 100)
             max_height = max(100, viewport_size['height'] - 100)
             
-            current_pos = (random.randint(50, max_width), random.randint(50, max_height))
-            new_pos = (random.randint(50, max_width), random.randint(50, max_height))
+            # Множественные случайные движения
+            movement_count = random.randint(2, 5)
             
-            curve_points = HumanBehaviorSimulator.generate_bezier_curve(current_pos, new_pos)
-            actions = ActionChains(self.driver)
-            
-            for i, point in enumerate(curve_points):
-                if i == 0:
-                    continue
-                prev_point = curve_points[i-1]
-                offset_x = max(-50, min(50, int(point[0] - prev_point[0])))
-                offset_y = max(-50, min(50, int(point[1] - prev_point[1])))
-                actions.move_by_offset(offset_x, offset_y)
-                time.sleep(random.uniform(0.01, 0.05))
-            
-            actions.perform()
+            for _ in range(movement_count):
+                current_pos = (random.randint(50, max_width), random.randint(50, max_height))
+                new_pos = (random.randint(50, max_width), random.randint(50, max_height))
+                
+                curve_points = HumanBehaviorSimulator.generate_bezier_curve(current_pos, new_pos)
+                actions = ActionChains(self.driver)
+                
+                for i, point in enumerate(curve_points):
+                    if i == 0:
+                        continue
+                    prev_point = curve_points[i-1]
+                    offset_x = max(-50, min(50, int(point[0] - prev_point[0])))
+                    offset_y = max(-50, min(50, int(point[1] - prev_point[1])))
+                    actions.move_by_offset(offset_x, offset_y)
+                    time.sleep(random.uniform(0.005, 0.02))  # Уменьшено
+                
+                actions.perform()
+                time.sleep(random.uniform(0.1, 0.3))  # Пауза между движениями
         except:
             pass
     
     def random_scroll(self):
-        """Прокрутка"""
+        """УЛУЧШЕННАЯ случайная прокрутка - более частая, случайная и кривая"""
         try:
-            scroll_direction = random.choice(['up', 'down'])
-            scroll_amount = random.randint(100, 500)
+            # Случайное направление прокрутки
+            scroll_direction = random.choice(['up', 'down', 'left', 'right'])
             
-            if scroll_direction == 'down':
-                self.driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
-            else:
-                self.driver.execute_script(f"window.scrollBy(0, -{scroll_amount});")
+            # Случайная сила прокрутки
+            scroll_amount = random.randint(50, 300)  # Уменьшено с 100-500
             
-            time.sleep(random.uniform(0.5, 2.0))
+            # Кривая прокрутка - несколько мелких прокруток
+            scroll_steps = random.randint(2, 5)
+            step_amount = scroll_amount // scroll_steps
+            
+            for _ in range(scroll_steps):
+                # Добавляем случайность в каждый шаг
+                step_variation = random.randint(-20, 20)
+                current_step = step_amount + step_variation
+                
+                if scroll_direction == 'down':
+                    self.driver.execute_script(f"window.scrollBy(0, {current_step});")
+                elif scroll_direction == 'up':
+                    self.driver.execute_script(f"window.scrollBy(0, -{current_step});")
+                elif scroll_direction == 'right':
+                    self.driver.execute_script(f"window.scrollBy({current_step}, 0);")
+                elif scroll_direction == 'left':
+                    self.driver.execute_script(f"window.scrollBy(-{current_step}, 0);")
+                
+                time.sleep(random.uniform(0.05, 0.2))  # Уменьшено
+            
+            # Дополнительная случайная прокрутка к элементам
+            if random.random() < 0.3:
+                try:
+                    # Прокрутка к случайному элементу
+                    elements = self.driver.find_elements(By.TAG_NAME, "div")
+                    if elements:
+                        random_element = random.choice(elements[:10])  # Первые 10 элементов
+                        self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", random_element)
+                        time.sleep(random.uniform(0.3, 0.8))
+                except:
+                    pass
+            
         except:
             pass
 
@@ -1699,7 +1757,7 @@ class AvisoAutomation:
         try:
             if "/tasks-youtube" not in self.driver.current_url:
                 self.driver.get(f"{self.base_url}/tasks-youtube")
-                time.sleep(3)
+                time.sleep(2)
             
             tasks_data = self.driver.execute_script("""
                 var tasks = [];
@@ -1768,596 +1826,6 @@ class AvisoAutomation:
             logging.error(f"❌ Ошибка получения YouTube заданий: {e}")
             return []
 
-    def execute_youtube_task(self, task: Dict) -> bool:
-        """Выполнение YouTube задания с правильными селекторами"""
-        task_id = task['id']
-        
-        logging.info(f"🎯 YouTube задание {task_id}")
-        
-        original_window = self.driver.current_window_handle
-        
-        try:
-            if "/tasks-youtube" not in self.driver.current_url:
-                self.driver.get(f"{self.base_url}/tasks-youtube")
-                time.sleep(3)
-            
-            # ЗАНОВО находим элементы с ИСПРАВЛЕННЫМИ селекторами
-            try:
-                task_row = self.driver.find_element(By.CSS_SELECTOR, task['row_selector'])
-                start_button = self.driver.find_element(By.CSS_SELECTOR, task['button_selector'])
-            except NoSuchElementException:
-                logging.warning(f"⚠ Элементы задания {task_id} не найдены (возможно уже выполнено)")
-                return False
-            except Exception as e:
-                logging.error(f"❌ Ошибка поиска элементов задания {task_id}: {e}")
-                return False
-            
-            # Прокрутка к заданию
-            try:
-                ActionChains(self.driver).move_to_element(task_row).perform()
-            except:
-                pass
-            
-            time.sleep(random.uniform(1, 2))
-            
-            # Пауза перед кликом
-            pause = random.uniform(1, 8)
-            logging.info(f"⏳ Пауза {pause:.1f}с")
-            time.sleep(pause)
-            
-            # Клик по заданию
-            try:
-                start_button.click()
-            except ElementClickInterceptedException:
-                self.driver.execute_script("arguments[0].click();", start_button)
-            except Exception as e:
-                logging.error(f"❌ Не удалось кликнуть по заданию {task_id}: {e}")
-                return False
-            
-            time.sleep(3)
-            
-            # Переключение на новую вкладку
-            all_windows = self.driver.window_handles
-            new_window = None
-            
-            for window in all_windows:
-                if window != original_window:
-                    self.driver.switch_to.window(window)
-                    new_window = window
-                    break
-            
-            if not new_window:
-                logging.error("❌ Новая вкладка не найдена")
-                return False
-            
-            # Обработка рекламы
-            self.handle_youtube_ads()
-            
-            # Ожидание по таймеру Aviso
-            if self.wait_for_aviso_timer_completion():
-                logging.info("✅ YouTube задание завершено!")
-                
-                time.sleep(random.uniform(1, 4))
-                
-                # Возврат на исходную вкладку
-                try:
-                    self.driver.close()
-                    self.driver.switch_to.window(original_window)
-                except:
-                    try:
-                        for window in self.driver.window_handles:
-                            if window == original_window:
-                                self.driver.switch_to.window(window)
-                                break
-                    except:
-                        pass
-                
-                # Перезагрузка страницы
-                logging.info("🔄 Обновление страницы YouTube заданий...")
-                self.driver.refresh()
-                time.sleep(5)
-                
-                return True
-            else:
-                logging.error(f"❌ YouTube задание {task_id} не завершено")
-                return False
-                
-        except Exception as e:
-            logging.error(f"❌ Ошибка YouTube задания {task_id}: {e}")
-            return False
-        finally:
-            # Очистка окон в любом случае
-            try:
-                current_windows = self.driver.window_handles
-                if len(current_windows) > 1:
-                    for window in current_windows:
-                        if window != original_window:
-                            try:
-                                self.driver.switch_to.window(window)
-                                self.driver.close()
-                            except:
-                                pass
-                    
-                    try:
-                        self.driver.switch_to.window(original_window)
-                    except:
-                        available_windows = self.driver.window_handles
-                        if available_windows:
-                            self.driver.switch_to.window(available_windows[0])
-            except Exception as cleanup_error:
-                logging.debug(f"⚠ Ошибка очистки окон: {cleanup_error}")
-
-    def handle_youtube_ads(self) -> bool:
-        """Обработка рекламы YouTube"""
-        logging.info("📺 Проверка рекламы...")
-        
-        try:
-            time.sleep(3)
-            
-            ad_status = self.driver.execute_script("""
-                var adBadges = document.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
-                var hasAd = false;
-                
-                for (var i = 0; i < adBadges.length; i++) {
-                    if (adBadges[i].offsetParent !== null) {
-                        hasAd = true;
-                        break;
-                    }
-                }
-                
-                if (!hasAd) {
-                    return {status: 'no_ad'};
-                }
-                
-                var skipButtons = document.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
-                for (var i = 0; i < skipButtons.length; i++) {
-                    if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
-                        return {status: 'skip_available', element: skipButtons[i]};
-                    }
-                }
-                
-                return {status: 'wait_ad'};
-            """)
-            
-            if ad_status['status'] == 'no_ad':
-                return True
-            
-            if ad_status['status'] == 'skip_available':
-                self.driver.execute_script("arguments[0].click();", ad_status['element'])
-                logging.info("⏭ Реклама пропущена")
-                time.sleep(2)
-                return True
-            
-            logging.info("📺 Ждем завершения рекламы...")
-            
-            for attempt in range(120):
-                ad_finished = self.driver.execute_script("""
-                    var adBadges = document.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
-                    for (var i = 0; i < adBadges.length; i++) {
-                        if (adBadges[i].offsetParent !== null) {
-                            return false;
-                        }
-                    }
-                    
-                    var skipButtons = document.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
-                    for (var i = 0; i < skipButtons.length; i++) {
-                        if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
-                            skipButtons[i].click();
-                            return true;
-                        }
-                    }
-                    
-                    return true;
-                """)
-                
-                if ad_finished:
-                    logging.info("✅ Реклама завершилась")
-                    return True
-                
-                time.sleep(1)
-            
-            logging.info("✅ Реклама обработана")
-            return True
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка рекламы: {e}")
-            return True
-
-    def click_center_screen(self):
-        """Запуск видео - работа с IFRAME и физические клики"""
-        try:
-            logging.info("🖱 Запуск видео...")
-            
-            # Поиск и работа с iframe
-            iframe_switched = False
-            try:
-                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
-                logging.info(f"🔍 Найдено iframe'ов: {len(iframes)}")
-                
-                for i, iframe in enumerate(iframes):
-                    try:
-                        self.driver.switch_to.frame(iframe)
-                        iframe_switched = True
-                        logging.info(f"✅ Переключились на iframe {i}")
-                        
-                        success = self.driver.execute_script("""
-                            var attempts = [];
-                            
-                            var videos = document.getElementsByTagName('video');
-                            attempts.push('Videos found in iframe: ' + videos.length);
-                            
-                            for (var i = 0; i < videos.length; i++) {
-                                try {
-                                    var video = videos[i];
-                                    
-                                    video.muted = false;
-                                    video.volume = 0.1;
-                                    video.controls = true;
-                                    video.autoplay = true;
-                                    
-                                    var playPromise = video.play();
-                                    if (playPromise && typeof playPromise.then === 'function') {
-                                        playPromise.then(function() {
-                                            attempts.push('IFRAME Video ' + i + ' STARTED!');
-                                        }).catch(function(error) {
-                                            video.muted = true;
-                                            video.play().then(function() {
-                                                attempts.push('IFRAME Video ' + i + ' started muted');
-                                                setTimeout(function() { video.muted = false; }, 1000);
-                                            });
-                                        });
-                                    }
-                                    
-                                    var rect = video.getBoundingClientRect();
-                                    if (rect.width > 0 && rect.height > 0) {
-                                        var clickEvent = new MouseEvent('click', {
-                                            view: window,
-                                            bubbles: true,
-                                            cancelable: true,
-                                            clientX: rect.left + rect.width / 2,
-                                            clientY: rect.top + rect.height / 2
-                                        });
-                                        video.dispatchEvent(clickEvent);
-                                        attempts.push('Clicked iframe video ' + i);
-                                    }
-                                    
-                                } catch (e) {
-                                    attempts.push('IFRAME Video ' + i + ' error: ' + e.message);
-                                }
-                            }
-                            
-                            var playButtons = document.querySelectorAll(
-                                '.ytp-large-play-button, .ytp-play-button, [aria-label*="Play"], [aria-label*="Воспроизвести"]'
-                            );
-                            
-                            for (var i = 0; i < playButtons.length; i++) {
-                                try {
-                                    var button = playButtons[i];
-                                    if (button.offsetParent !== null) {
-                                        button.click();
-                                        attempts.push('IFRAME Play button clicked: ' + i);
-                                    }
-                                } catch (e) {
-                                    attempts.push('IFRAME Button error: ' + e.message);
-                                }
-                            }
-                            
-                            return attempts;
-                        """)
-                        
-                        logging.info(f"🎬 IFRAME попытки: {success}")
-                        
-                        self.driver.switch_to.default_content()
-                        break
-                        
-                    except Exception as e:
-                        self.driver.switch_to.default_content()
-                        continue
-                        
-            except Exception as e:
-                logging.info(f"⚠ Не удалось работать с iframe: {e}")
-                if iframe_switched:
-                    self.driver.switch_to.default_content()
-            
-            # Физические клики
-            try:
-                logging.info("🖱 Выполняем физические клики...")
-                
-                viewport_size = self.driver.get_window_size()
-                
-                click_points = [
-                    (382, 456),
-                    (viewport_size['width'] // 2, viewport_size['height'] // 2),
-                    (viewport_size['width'] // 2, viewport_size['height'] // 3),
-                    (viewport_size['width'] // 2, viewport_size['height'] * 2 // 3),
-                    (viewport_size['width'] // 3, viewport_size['height'] // 2),
-                    (viewport_size['width'] * 2 // 3, viewport_size['height'] // 2),
-                ]
-                
-                for i, (x, y) in enumerate(click_points):
-                    try:
-                        x = max(10, min(viewport_size['width'] - 10, x))
-                        y = max(10, min(viewport_size['height'] - 10, y))
-                        
-                        logging.info(f"🖱 Клик {i+1}: ({x}, {y})")
-                        
-                        actions = ActionChains(self.driver)
-                        actions.move_by_offset(x - viewport_size['width']//2, y - viewport_size['height']//2)
-                        actions.click()
-                        actions.perform()
-                        time.sleep(0.3)
-                        
-                        actions = ActionChains(self.driver)
-                        actions.move_by_offset(-(x - viewport_size['width']//2), -(y - viewport_size['height']//2))
-                        actions.perform()
-                        
-                        self.driver.execute_script(f"""
-                            var element = document.elementFromPoint({x}, {y});
-                            if (element) {{
-                                var clickEvent = new MouseEvent('click', {{
-                                    view: window,
-                                    bubbles: true,
-                                    cancelable: true,
-                                    clientX: {x},
-                                    clientY: {y}
-                                }});
-                                element.dispatchEvent(clickEvent);
-                                element.click();
-                            }}
-                        """)
-                        
-                    except Exception as e:
-                        logging.info(f"⚠ Ошибка клика {i+1}: {e}")
-                        
-            except Exception as e:
-                logging.info(f"⚠ Ошибка физических кликов: {e}")
-            
-            # Клавиатурные команды
-            try:
-                from selenium.webdriver.common.keys import Keys
-                body = self.driver.find_element(By.TAG_NAME, "body")
-                
-                keys_to_try = [Keys.SPACE, Keys.ENTER, 'k', 'p', Keys.ARROW_RIGHT]
-                for key in keys_to_try:
-                    try:
-                        body.send_keys(key)
-                        time.sleep(0.2)
-                        logging.info(f"⌨ Нажата клавиша: {key}")
-                    except:
-                        pass
-            except:
-                pass
-            
-            # Дополнительные команды для YouTube
-            time.sleep(1)
-            self.driver.execute_script("""
-                var iframes = document.getElementsByTagName('iframe');
-                for (var i = 0; i < iframes.length; i++) {
-                    try {
-                        var iframe = iframes[i];
-                        
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                        
-                        var rect = iframe.getBoundingClientRect();
-                        var x = rect.left + rect.width / 2;
-                        var y = rect.top + rect.height / 2;
-                        
-                        var clickEvent = new MouseEvent('click', {
-                            view: window,
-                            bubbles: true,
-                            cancelable: true,
-                            clientX: x,
-                            clientY: y
-                        });
-                        
-                        iframe.dispatchEvent(clickEvent);
-                        
-                        console.log('Sent postMessage and click to iframe', i);
-                        
-                    } catch (e) {
-                        console.log('iframe', i, 'error:', e);
-                    }
-                }
-                
-                document.dispatchEvent(new Event('click'));
-                window.focus();
-                document.body.focus();
-            """)
-            
-            # Проверка результата
-            time.sleep(2)
-            
-            status = self.driver.execute_script("""
-                var result = {
-                    videos_found: 0,
-                    videos_playing: 0,
-                    iframes_found: 0,
-                    audio_context: false
-                };
-                
-                var videos = document.getElementsByTagName('video');
-                result.videos_found = videos.length;
-                
-                for (var i = 0; i < videos.length; i++) {
-                    if (!videos[i].paused && videos[i].currentTime > 0) {
-                        result.videos_playing++;
-                    }
-                }
-                
-                result.iframes_found = document.getElementsByTagName('iframe').length;
-                
-                try {
-                    if (window.AudioContext || window.webkitAudioContext) {
-                        result.audio_context = true;
-                    }
-                } catch (e) {}
-                
-                return result;
-            """)
-            
-            logging.info(f"📊 Статус: {status}")
-            
-            if status['videos_playing'] > 0:
-                logging.info(f"✅ Видео запущено! Играющих: {status['videos_playing']}")
-            else:
-                logging.warning("⚠ Видео в iframe может быть не запущено")
-                
-                self.driver.execute_script("""
-                    setTimeout(function() {
-                        var iframes = document.getElementsByTagName('iframe');
-                        for (var i = 0; i < iframes.length; i++) {
-                            var iframe = iframes[i];
-                            var rect = iframe.getBoundingClientRect();
-                            
-                            for (var j = 0; j < 5; j++) {
-                                setTimeout(function() {
-                                    var x = rect.left + rect.width / 2;
-                                    var y = rect.top + rect.height / 2;
-                                    
-                                    var clickEvent = new MouseEvent('click', {
-                                        view: window,
-                                        bubbles: true,
-                                        cancelable: true,
-                                        clientX: x,
-                                        clientY: y
-                                    });
-                                    
-                                    iframe.dispatchEvent(clickEvent);
-                                    document.elementFromPoint(x, y).click();
-                                    
-                                }, j * 100);
-                            }
-                        }
-                    }, 100);
-                """)
-            
-            logging.info("🎮 Попытки запуска завершены")
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка запуска видео: {e}")
-            try:
-                self.driver.switch_to.default_content()
-            except:
-                pass
-
-    def wait_for_aviso_timer_completion(self) -> bool:
-        """Ожидание таймера Aviso с контролем воспроизведения"""
-        logging.info("⏱ Ожидание таймера Aviso...")
-        
-        try:
-            last_timer_value = None
-            same_value_counter = 0
-            check_count = 0
-            video_was_playing = False
-            restart_attempts = 0
-            video_started_logged = False
-            
-            while True:
-                check_count += 1
-                
-                timer_status = self.driver.execute_script("""
-                    var timerElement = document.querySelector('span.timer#tmr');
-                    if (timerElement) {
-                        var timerText = timerElement.textContent.trim();
-                        if (/^\\d+$/.test(timerText)) {
-                            return {status: 'timer_found', value: parseInt(timerText)};
-                        }
-                    }
-                    
-                    var completionElements = document.querySelectorAll('span');
-                    for (var i = 0; i < completionElements.length; i++) {
-                        var text = completionElements[i].textContent;
-                        if (text.includes('Задача выполнена') && text.includes('начислено')) {
-                            return {status: 'completed', message: text.trim()};
-                        }
-                    }
-                    
-                    return {status: 'not_found'};
-                """)
-                
-                if timer_status['status'] == 'completed':
-                    logging.info(f"✅ Задание завершено: {timer_status['message']}")
-                    return True
-                
-                if timer_status['status'] == 'timer_found':
-                    current_timer_value = timer_status['value']
-                    
-                    if check_count % 20 == 0:
-                        logging.info(f"⏰ Таймер: {current_timer_value}с")
-                    
-                    if last_timer_value is not None:
-                        if current_timer_value == last_timer_value:
-                            same_value_counter += 1
-                            
-                            if same_value_counter >= 10:
-                                
-                                if video_was_playing:
-                                    restart_attempts += 1
-                                    logging.warning(f"⏸ Видео остановилось! Попытка перезапуска {restart_attempts}/3")
-                                    
-                                    if restart_attempts >= 3:
-                                        logging.error("💥 Видео не перезапускается! Обновляем страницу...")
-                                        self.driver.refresh()
-                                        time.sleep(5)
-                                        
-                                        self.handle_youtube_ads()
-                                        
-                                        restart_attempts = 0
-                                        video_was_playing = False
-                                        video_started_logged = False
-                                        last_timer_value = None
-                                        same_value_counter = 0
-                                        continue
-                                else:
-                                    if not video_started_logged:
-                                        logging.warning("⏸ Видео на паузе! Запускаем...")
-                                
-                                self.click_center_screen()
-                                same_value_counter = 0
-                        else:
-                            if same_value_counter > 0:
-                                if not video_started_logged:
-                                    logging.info("▶ Видео запустилось")
-                                    video_started_logged = True
-                                video_was_playing = True
-                                restart_attempts = 0
-                            same_value_counter = 0
-                    
-                    last_timer_value = current_timer_value
-                    
-                    if current_timer_value <= 0:
-                        logging.info("✅ Таймер достиг нуля")
-                        break
-                
-                time.sleep(0.5)
-                
-                if check_count > 1200:
-                    logging.warning("⏰ Превышено время ожидания")
-                    return False
-            
-            time.sleep(2)
-            final_check = self.driver.execute_script("""
-                var completionElements = document.querySelectorAll('span');
-                for (var i = 0; i < completionElements.length; i++) {
-                    var text = completionElements[i].textContent;
-                    if (text.includes('Задача выполнена') && text.includes('начислено')) {
-                        return text.trim();
-                    }
-                }
-                return null;
-            """)
-            
-            if final_check:
-                logging.info(f"✅ Подтверждение: {final_check}")
-            
-            return True
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка таймера: {e}")
-            return False
-
-    # ========== SURF TASKS ==========
     def get_surf_tasks(self) -> List[Dict]:
         """Получение заданий на серфинг"""
         logging.info("🌊 Поиск заданий на серфинг...")
@@ -2365,7 +1833,7 @@ class AvisoAutomation:
         try:
             if "/tasks-surf" not in self.driver.current_url:
                 self.driver.get(f"{self.base_url}/tasks-surf")
-                time.sleep(3)
+                time.sleep(2)
             
             surf_tasks_data = self.driver.execute_script("""
                 var tasks = [];
@@ -2427,6 +1895,565 @@ class AvisoAutomation:
             logging.error(f"❌ Ошибка получения серфинг заданий: {e}")
             return []
 
+    def execute_youtube_task(self, task: Dict) -> bool:
+        """Выполнение YouTube задания с правильными селекторами"""
+        task_id = task['id']
+        
+        logging.info(f"🎯 YouTube задание {task_id}")
+        
+        original_window = self.driver.current_window_handle
+        
+        try:
+            if "/tasks-youtube" not in self.driver.current_url:
+                self.driver.get(f"{self.base_url}/tasks-youtube")
+                time.sleep(2)  # Уменьшено
+            
+            # ЗАНОВО находим элементы с ИСПРАВЛЕННЫМИ селекторами
+            try:
+                task_row = self.driver.find_element(By.CSS_SELECTOR, task['row_selector'])
+                start_button = self.driver.find_element(By.CSS_SELECTOR, task['button_selector'])
+            except NoSuchElementException:
+                logging.warning(f"⚠ Элементы задания {task_id} не найдены (возможно уже выполнено)")
+                return False
+            except Exception as e:
+                logging.error(f"❌ Ошибка поиска элементов задания {task_id}: {e}")
+                return False
+            
+            # Прокрутка к заданию
+            try:
+                ActionChains(self.driver).move_to_element(task_row).perform()
+            except:
+                pass
+            
+            time.sleep(random.uniform(0.5, 1.5))  # Уменьшено
+            
+            # Пауза перед кликом - ДОБАВЛЕНА СЛУЧАЙНАЯ ЗАДЕРЖКА
+            pause = random.uniform(1, 10)  # Случайная задержка 1-10 секунд
+            logging.info(f"⏳ Случайная пауза перед кликом: {pause:.1f}с")
+            time.sleep(pause)
+            
+            # Клик по заданию
+            try:
+                start_button.click()
+            except ElementClickInterceptedException:
+                self.driver.execute_script("arguments[0].click();", start_button)
+            except Exception as e:
+                logging.error(f"❌ Не удалось кликнуть по заданию {task_id}: {e}")
+                return False
+            
+            time.sleep(2)  # Уменьшено
+            
+            # Переключение на новую вкладку
+            all_windows = self.driver.window_handles
+            new_window = None
+            
+            for window in all_windows:
+                if window != original_window:
+                    self.driver.switch_to.window(window)
+                    new_window = window
+                    break
+            
+            if not new_window:
+                logging.error("❌ Новая вкладка не найдена")
+                return False
+            
+            # Обработка рекламы
+            self.handle_youtube_ads()
+            
+            # Ожидание по таймеру Aviso
+            if self.wait_for_aviso_timer_completion():
+                logging.info("✅ YouTube задание завершено!")
+                
+                time.sleep(random.uniform(0.5, 2))  # Уменьшено
+                
+                # Возврат на исходную вкладку
+                try:
+                    self.driver.close()
+                    self.driver.switch_to.window(original_window)
+                except:
+                    try:
+                        for window in self.driver.window_handles:
+                            if window == original_window:
+                                self.driver.switch_to.window(window)
+                                break
+                    except:
+                        pass
+                
+                # Перезагрузка страницы
+                logging.info("🔄 Обновление страницы YouTube заданий...")
+                self.driver.refresh()
+                time.sleep(3)  # Уменьшено с 5
+                
+                return True
+            else:
+                logging.error(f"❌ YouTube задание {task_id} не завершено")
+                return False
+                
+        except Exception as e:
+            logging.error(f"❌ Ошибка YouTube задания {task_id}: {e}")
+            return False
+        finally:
+            # Очистка окон в любом случае
+            try:
+                current_windows = self.driver.window_handles
+                if len(current_windows) > 1:
+                    for window in current_windows:
+                        if window != original_window:
+                            try:
+                                self.driver.switch_to.window(window)
+                                self.driver.close()
+                            except:
+                                pass
+                    
+                    try:
+                        self.driver.switch_to.window(original_window)
+                    except:
+                        available_windows = self.driver.window_handles
+                        if available_windows:
+                            self.driver.switch_to.window(available_windows[0])
+            except Exception as cleanup_error:
+                logging.debug(f"⚠ Ошибка очистки окон: {cleanup_error}")
+
+    def handle_youtube_ads(self) -> bool:
+        """Обработка рекламы YouTube"""
+        logging.info("📺 Проверка рекламы...")
+        
+        try:
+            time.sleep(2)  # Уменьшено
+            
+            ad_status = self.driver.execute_script("""
+                var adBadges = document.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
+                var hasAd = false;
+                
+                for (var i = 0; i < adBadges.length; i++) {
+                    if (adBadges[i].offsetParent !== null) {
+                        hasAd = true;
+                        break;
+                    }
+                }
+                
+                if (!hasAd) {
+                    return {status: 'no_ad'};
+                }
+                
+                var skipButtons = document.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
+                for (var i = 0; i < skipButtons.length; i++) {
+                    if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
+                        return {status: 'skip_available', element: skipButtons[i]};
+                    }
+                }
+                
+                return {status: 'wait_ad'};
+            """)
+            
+            if ad_status['status'] == 'no_ad':
+                return True
+            
+            if ad_status['status'] == 'skip_available':
+                self.driver.execute_script("arguments[0].click();", ad_status['element'])
+                logging.info("⏭ Реклама пропущена")
+                time.sleep(1)  # Уменьшено
+                return True
+            
+            logging.info("📺 Ждем завершения рекламы...")
+            
+            for attempt in range(60):  # Уменьшено с 120
+                ad_finished = self.driver.execute_script("""
+                    var adBadges = document.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
+                    for (var i = 0; i < adBadges.length; i++) {
+                        if (adBadges[i].offsetParent !== null) {
+                            return false;
+                        }
+                    }
+                    
+                    var skipButtons = document.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
+                    for (var i = 0; i < skipButtons.length; i++) {
+                        if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
+                            skipButtons[i].click();
+                            return true;
+                        }
+                    }
+                    
+                    return true;
+                """)
+                
+                if ad_finished:
+                    logging.info("✅ Реклама завершилась")
+                    return True
+                
+                time.sleep(1)
+            
+            logging.info("✅ Реклама обработана")
+            return True
+            
+        except Exception as e:
+            logging.error(f"❌ Ошибка рекламы: {e}")
+            return True
+
+    def click_center_screen(self):
+        """ИСПРАВЛЕННЫЙ запуск видео - ОДИН клик, повторные попытки только если не сработал"""
+        try:
+            logging.info("🖱 Запуск видео...")
+            
+            # Поиск и работа с iframe - ПРИОРИТЕТ
+            iframe_success = False
+            try:
+                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
+                logging.info(f"🔍 Найдено iframe'ов: {len(iframes)}")
+                
+                for i, iframe in enumerate(iframes):
+                    try:
+                        self.driver.switch_to.frame(iframe)
+                        logging.info(f"✅ Переключились на iframe {i}")
+                        
+                        # ОДИН клик по кнопке воспроизведения
+                        success = self.driver.execute_script("""
+                            var playButtons = document.querySelectorAll(
+                                '.ytp-large-play-button, .ytp-play-button, [aria-label*="Play"], [aria-label*="Воспроизвести"]'
+                            );
+                            
+                            for (var i = 0; i < playButtons.length; i++) {
+                                try {
+                                    var button = playButtons[i];
+                                    if (button.offsetParent !== null) {
+                                        button.click();
+                                        return true;
+                                    }
+                                } catch (e) {
+                                    // Пропускаем ошибки
+                                }
+                            }
+                            
+                            return false;
+                        """)
+                        
+                        if success:
+                            logging.info("✅ Кнопка воспроизведения нажата в iframe")
+                            iframe_success = True
+                            
+                        self.driver.switch_to.default_content()
+                        
+                        if iframe_success:
+                            break
+                        
+                    except Exception as e:
+                        self.driver.switch_to.default_content()
+                        continue
+                        
+            except Exception as e:
+                logging.info(f"⚠ Не удалось работать с iframe: {e}")
+                self.driver.switch_to.default_content()
+            
+            # Если iframe сработал - проверяем результат
+            if iframe_success:
+                time.sleep(2)
+                status = self.check_video_status()
+                if status['videos_playing'] > 0:
+                    logging.info(f"✅ Видео запущено через iframe! Играющих: {status['videos_playing']}")
+                    return
+                else:
+                    logging.warning("⚠ Iframe клик не запустил видео, пробуем физический клик...")
+            
+            # Если iframe не сработал - ОДИН физический клик
+            logging.info("🖱 Выполняем ОДИН физический клик...")
+            
+            viewport_size = self.driver.get_window_size()
+            center_x = viewport_size['width'] // 2
+            center_y = viewport_size['height'] // 2
+            
+            try:
+                actions = ActionChains(self.driver)
+                actions.move_by_offset(center_x - viewport_size['width']//2, center_y - viewport_size['height']//2)
+                actions.click()
+                actions.perform()
+                logging.info(f"🖱 Выполнен физический клик в центр: ({center_x}, {center_y})")
+                
+                # Возвращаем курсор обратно
+                actions = ActionChains(self.driver)
+                actions.move_by_offset(-(center_x - viewport_size['width']//2), -(center_y - viewport_size['height']//2))
+                actions.perform()
+                
+            except Exception as e:
+                logging.warning(f"⚠ Ошибка физического клика: {e}")
+            
+            # Проверяем результат после физического клика
+            time.sleep(2)
+            status = self.check_video_status()
+            if status['videos_playing'] > 0:
+                logging.info(f"✅ Видео запущено физическим кликом! Играющих: {status['videos_playing']}")
+                return
+            
+            # Если физический клик не сработал - пробуем дополнительные методы
+            logging.warning("⚠ Физический клик не сработал, пробуем дополнительные методы...")
+            
+            # Клавиатурные команды - ОДИН раз
+            try:
+                from selenium.webdriver.common.keys import Keys
+                body = self.driver.find_element(By.TAG_NAME, "body")
+                body.send_keys(Keys.SPACE)
+                logging.info("⌨ Нажата клавиша SPACE")
+                time.sleep(1)
+                
+                # Проверяем результат
+                status = self.check_video_status()
+                if status['videos_playing'] > 0:
+                    logging.info(f"✅ Видео запущено клавишей SPACE! Играющих: {status['videos_playing']}")
+                    return
+                
+            except Exception as e:
+                logging.warning(f"⚠ Ошибка клавиатурной команды: {e}")
+            
+            # Последняя попытка - JavaScript команды для iframe
+            logging.info("🔄 Последняя попытка через JavaScript команды...")
+            try:
+                self.driver.execute_script("""
+                    var iframes = document.getElementsByTagName('iframe');
+                    for (var i = 0; i < iframes.length; i++) {
+                        try {
+                            var iframe = iframes[i];
+                            iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                            iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                        } catch (e) {
+                            // Пропускаем ошибки
+                        }
+                    }
+                """)
+                
+                time.sleep(2)
+                status = self.check_video_status()
+                if status['videos_playing'] > 0:
+                    logging.info(f"✅ Видео запущено JavaScript командами! Играющих: {status['videos_playing']}")
+                    return
+                
+            except Exception as e:
+                logging.warning(f"⚠ Ошибка JavaScript команд: {e}")
+            
+            # Финальная проверка
+            final_status = self.check_video_status()
+            if final_status['videos_playing'] > 0:
+                logging.info(f"✅ Видео в итоге запущено! Играющих: {final_status['videos_playing']}")
+            else:
+                logging.warning("⚠ Видео может быть не запущено после всех попыток")
+            
+        except Exception as e:
+            logging.error(f"❌ Ошибка запуска видео: {e}")
+            try:
+                self.driver.switch_to.default_content()
+            except:
+                pass
+
+    def check_video_status(self) -> Dict:
+        """Проверка статуса видео"""
+        try:
+            return self.driver.execute_script("""
+                var result = {
+                    videos_found: 0,
+                    videos_playing: 0,
+                    iframes_found: 0
+                };
+                
+                var videos = document.getElementsByTagName('video');
+                result.videos_found = videos.length;
+                
+                for (var i = 0; i < videos.length; i++) {
+                    if (!videos[i].paused && videos[i].currentTime > 0) {
+                        result.videos_playing++;
+                    }
+                }
+                
+                result.iframes_found = document.getElementsByTagName('iframe').length;
+                
+                return result;
+            """)
+        except:
+            return {'videos_found': 0, 'videos_playing': 0, 'iframes_found': 0}
+
+    def wait_for_aviso_timer_completion(self) -> bool:
+        """Ожидание таймера Aviso с контролем воспроизведения"""
+        logging.info("⏱ Ожидание таймера Aviso...")
+        
+        try:
+            last_timer_value = None
+            same_value_counter = 0
+            check_count = 0
+            video_was_playing = False
+            restart_attempts = 0
+            video_started_logged = False
+            
+            while True:
+                check_count += 1
+                
+                timer_status = self.driver.execute_script("""
+                    var timerElement = document.querySelector('span.timer#tmr');
+                    if (timerElement) {
+                        var timerText = timerElement.textContent.trim();
+                        if (/^\\d+$/.test(timerText)) {
+                            return {status: 'timer_found', value: parseInt(timerText)};
+                        }
+                    }
+                    
+                    var completionElements = document.querySelectorAll('span');
+                    for (var i = 0; i < completionElements.length; i++) {
+                        var text = completionElements[i].textContent;
+                        if (text.includes('Задача выполнена') && text.includes('начислено')) {
+                            return {status: 'completed', message: text.trim()};
+                        }
+                    }
+                    
+                    return {status: 'not_found'};
+                """)
+                
+                if timer_status['status'] == 'completed':
+                    logging.info(f"✅ Задание завершено: {timer_status['message']}")
+                    return True
+                
+                if timer_status['status'] == 'timer_found':
+                    current_timer_value = timer_status['value']
+                    
+                    if check_count % 10 == 0:  # Уменьшено с 20
+                        logging.info(f"⏰ Таймер: {current_timer_value}с")
+                    
+                    if last_timer_value is not None:
+                        if current_timer_value == last_timer_value:
+                            same_value_counter += 1
+                            
+                            if same_value_counter >= 8:  # Уменьшено с 10
+                                
+                                if video_was_playing:
+                                    restart_attempts += 1
+                                    logging.warning(f"⏸ Видео остановилось! Попытка перезапуска {restart_attempts}/3")
+                                    
+                                    if restart_attempts >= 3:
+                                        logging.error("💥 Видео не перезапускается! Обновляем страницу...")
+                                        self.driver.refresh()
+                                        time.sleep(3)  # Уменьшено с 5
+                                        
+                                        self.handle_youtube_ads()
+                                        
+                                        restart_attempts = 0
+                                        video_was_playing = False
+                                        video_started_logged = False
+                                        last_timer_value = None
+                                        same_value_counter = 0
+                                        continue
+                                else:
+                                    if not video_started_logged:
+                                        logging.warning("⏸ Видео на паузе! Запускаем...")
+                                
+                                self.click_center_screen()
+                                same_value_counter = 0
+                        else:
+                            if same_value_counter > 0:
+                                if not video_started_logged:
+                                    logging.info("▶ Видео запустилось")
+                                    video_started_logged = True
+                                video_was_playing = True
+                                restart_attempts = 0
+                            same_value_counter = 0
+                    
+                    last_timer_value = current_timer_value
+                    
+                    if current_timer_value <= 0:
+                        logging.info("✅ Таймер достиг нуля")
+                        break
+                
+                time.sleep(0.5)
+                
+                if check_count > 1000:  # Уменьшено с 1200
+                    logging.warning("⏰ Превышено время ожидания")
+                    return False
+            
+            time.sleep(1)  # Уменьшено
+            final_check = self.driver.execute_script("""
+                var completionElements = document.querySelectorAll('span');
+                for (var i = 0; i < completionElements.length; i++) {
+                    var text = completionElements[i].textContent;
+                    if (text.includes('Задача выполнена') && text.includes('начислено')) {
+                        return text.trim();
+                    }
+                }
+                return null;
+            """)
+            
+            if final_check:
+                logging.info(f"✅ Подтверждение: {final_check}")
+            
+            return True
+            
+        except Exception as e:
+            logging.error(f"❌ Ошибка таймера: {e}")
+            return False
+
+    # ========== SURF TASKS ==========
+    def get_surf_tasks(self) -> List[Dict]:
+        """Получение заданий на серфинг"""
+        logging.info("🌊 Поиск заданий на серфинг...")
+        
+        try:
+            if "/tasks-surf" not in self.driver.current_url:
+                self.driver.get(f"{self.base_url}/tasks-surf")
+                time.sleep(2)  # Уменьшено
+            
+            surf_tasks_data = self.driver.execute_script("""
+                var tasks = [];
+                var rows = document.querySelectorAll("tr[class^='de_']");
+                
+                for (var i = 0; i < rows.length; i++) {
+                    try {
+                        var row = rows[i];
+                        var className = row.className;
+                        var taskIdMatch = className.match(/de_(\\d+)/);
+                        
+                        if (taskIdMatch) {
+                            var taskId = taskIdMatch[1];
+                            var startDiv = row.querySelector("div[id='start-serf-" + taskId + "']");
+                            
+                            if (startDiv) {
+                                var link = startDiv.querySelector("a");
+                                if (link) {
+                                    var title = link.textContent.trim();
+                                    var url = link.getAttribute('title') || link.getAttribute('href') || 'unknown';
+                                    
+                                    tasks.push({
+                                        id: taskId,
+                                        title: title,
+                                        url: url,
+                                        row_class: className,
+                                        start_div_id: "start-serf-" + taskId
+                                    });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        # Пропускаем ошибочные элементы
+                    }
+                }
+                
+                return tasks;
+            """)
+            
+            tasks = []
+            for task_data in surf_tasks_data:
+                try:
+                    task_info = {
+                        'id': task_data['id'],
+                        'title': task_data['title'],
+                        'url': task_data['url'],
+                        'row_class': task_data['row_class'],
+                        'start_div_id': task_data['start_div_id']
+                    }
+                    tasks.append(task_info)
+                except Exception as e:
+                    logging.debug(f"⚠ Ошибка создания задания серфинга: {e}")
+                    continue
+            
+            logging.info(f"🌊 Найдено серфинг заданий: {len(tasks)}")
+            return tasks
+            
+        except Exception as e:
+            logging.error(f"❌ Ошибка получения серфинг заданий: {e}")
+            return []
+
     def execute_surf_task(self, task: Dict) -> bool:
         """Выполнение задания на серфинг"""
         task_id = task['id']
@@ -2437,7 +2464,7 @@ class AvisoAutomation:
         try:
             if "/tasks-surf" not in self.driver.current_url:
                 self.driver.get(f"{self.base_url}/tasks-surf")
-                time.sleep(3)
+                time.sleep(2)  # Уменьшено
             
             try:
                 task_row = self.driver.find_element(By.CSS_SELECTOR, f"tr.{task['row_class']}")
@@ -2455,10 +2482,11 @@ class AvisoAutomation:
             except:
                 pass
             
-            time.sleep(random.uniform(0.5, 2))
+            time.sleep(random.uniform(0.3, 1))  # Уменьшено
             
-            pause = random.uniform(0.5, 5)
-            logging.info(f"⏳ Пауза перед кликом {pause:.1f}с")
+            # СЛУЧАЙНАЯ ЗАДЕРЖКА перед кликом
+            pause = random.uniform(1, 10)
+            logging.info(f"⏳ Случайная пауза перед кликом {pause:.1f}с")
             time.sleep(pause)
             
             try:
@@ -2469,7 +2497,7 @@ class AvisoAutomation:
                 logging.error(f"❌ Ошибка клика по серфинг заданию {task_id}: {e}")
                 return False
             
-            time.sleep(3)
+            time.sleep(2)  # Уменьшено
             
             wait = WebDriverWait(self.driver, 30)
             
@@ -2477,13 +2505,19 @@ class AvisoAutomation:
                 start_viewing_button = wait.until(
                     EC.element_to_be_clickable((By.CLASS_NAME, "start-yes-serf"))
                 )
+                
+                # СЛУЧАЙНАЯ ЗАДЕРЖКА перед подтверждением
+                confirm_pause = random.uniform(0.1, 5)
+                logging.info(f"⏳ Случайная пауза перед подтверждением просмотра: {confirm_pause:.1f}с")
+                time.sleep(confirm_pause)
+                
                 start_viewing_button.click()
                 logging.info("✅ Нажата кнопка 'Приступить к просмотру'")
             except:
                 logging.error("❌ Не найдена кнопка 'Приступить к просмотру'")
                 return False
             
-            time.sleep(5)
+            time.sleep(3)  # Уменьшено
             
             all_windows = self.driver.window_handles
             new_window = None
@@ -2499,11 +2533,11 @@ class AvisoAutomation:
             
             logging.info("🚀 Начинаем поиск таймера/кнопки...")
             
-            # ИСПРАВЛЕНИЕ: Поиск ТОЛЬКО в frame
+            # ИСПРАВЛЕНИЕ: Мгновенное переключение на iframe
             if self.wait_for_surf_timer_completion():
                 logging.info("✅ Серфинг задание завершено!")
                 
-                time.sleep(random.uniform(1, 4))
+                time.sleep(random.uniform(0.5, 2))  # Уменьшено
                 
                 try:
                     self.driver.close()
@@ -2519,7 +2553,7 @@ class AvisoAutomation:
                 
                 logging.info("🔄 Обновление страницы серфинга...")
                 self.driver.refresh()
-                time.sleep(5)
+                time.sleep(3)  # Уменьшено с 5
                 
                 return True
             else:
@@ -2615,7 +2649,7 @@ class AvisoAutomation:
             return False
 
     def search_in_frames_with_names(self) -> Dict:
-        """ИСПРАВЛЕННЫЙ поиск с переключением по именам frame"""
+        """ИСПРАВЛЕННЫЙ поиск БЕЗ медленных селекторов"""
         result = {
             'timer_found': False,
             'timer_value': None,
@@ -2624,7 +2658,7 @@ class AvisoAutomation:
         }
         
         try:
-            # Получаем информацию о всех frame
+            # Получаем информацию о всех frame (оставляем как есть)
             frame_info = self.driver.execute_script("""
                 var frames = [];
                 var iframes = document.getElementsByTagName('iframe');
@@ -2654,6 +2688,7 @@ class AvisoAutomation:
             """)
             
             logging.info(f"🔍 Найдено frame элементов: {len(frame_info)}")
+            
             for frame in frame_info:
                 try:
                     frame_type = frame['type']
@@ -2662,7 +2697,7 @@ class AvisoAutomation:
                     
                     logging.info(f"🔄 Переключение на {frame_type}: name='{frame_name}', src='{frame_src}'")
                     
-                    # Переключаемся по имени или индексу
+                    # Переключение на frame (оставляем как есть)
                     if frame_name:
                         try:
                             self.driver.switch_to.frame(frame_name)
@@ -2683,7 +2718,7 @@ class AvisoAutomation:
                     
                     result['iframe_switched'] = True
                     
-                    # Поиск в frame
+                    # ГЛАВНОЕ ИСПРАВЛЕНИЕ - убираем медленные селекторы
                     frame_status = self.driver.execute_script("""
                         var result = {
                             timer_found: false,
@@ -2700,11 +2735,15 @@ class AvisoAutomation:
                             }
                         };
                         
-                        // Максимально широкий поиск таймера
+                        // ИСПРАВЛЕНИЕ: Убираем медленные селекторы для таймера
                         var timerSelectors = [
-                            'span.timer.notranslate#timer_inp', 'span#timer_inp', 
-                            'span.timer', '*[id*="timer"]', '*[class*="timer"]',
-                            'span[id*="tmr"]', '#tmr', '.tmr', 'span'
+                            'span.timer.notranslate#timer_inp', 
+                            'span#timer_inp', 
+                            'span.timer',
+                            'span#tmr',
+                            '#tmr',
+                            '.tmr'
+                            // УБРАЛИ: '*[id*="timer"]', '*[class*="timer"]', 'span' - они медленные!
                         ];
                         
                         for (var s = 0; s < timerSelectors.length; s++) {
@@ -2725,18 +2764,24 @@ class AvisoAutomation:
                                     if (element.offsetParent !== null && /^\\d+$/.test(elementText)) {
                                         result.timer_found = true;
                                         result.timer_value = parseInt(elementText);
+                                        break; // СРАЗУ ВЫХОДИМ когда нашли
                                     }
                                 }
+                                if (result.timer_found) break; // СРАЗУ ВЫХОДИМ из цикла селекторов
                             } catch (e) {
                                 // Пропускаем ошибки селекторов
                             }
                         }
                         
-                        // Максимально широкий поиск кнопки
+                        // ИСПРАВЛЕНИЕ: Убираем медленные селекторы для кнопок
                         var buttonSelectors = [
-                            'a.btn_capt', 'a[href*="vlss?view=ok"]', 'a[href*="view=ok"]',
-                            'button', 'a', 'span[onclick]', 'input[type="button"]',
-                            'input[type="submit"]', '*[onclick]', '*'
+                            'a.btn_capt', 
+                            'a[href*="vlss?view=ok"]', 
+                            'a[href*="view=ok"]',
+                            'button[type="submit"]',
+                            'input[type="submit"]',
+                            'button'
+                            // УБРАЛИ: 'a', 'span[onclick]', '*[onclick]', '*' - они медленные!
                         ];
                         
                         for (var s = 0; s < buttonSelectors.length; s++) {
@@ -2768,19 +2813,19 @@ class AvisoAutomation:
                                          onclick.includes('vlss'))) {
                                         result.button_found = true;
                                         result.button_element = element;
-                                        break;
+                                        break; // СРАЗУ ВЫХОДИМ когда нашли
                                     }
                                 }
+                                if (result.button_found) break; // СРАЗУ ВЫХОДИМ из цикла селекторов
                             } catch (e) {
                                 // Пропускаем ошибки селекторов
                             }
-                            if (result.button_found) break;
                         }
                         
                         return result;
                     """)
                     
-                    # Детальный лог
+                    # Детальный лог (сохраняем всю отладку)
                     logging.info(f"📊 Frame '{frame_name}' результаты:")
                     logging.info(f"   URL: {frame_status['debug_info']['url']}")
                     logging.info(f"   Заголовок: {frame_status['debug_info']['title']}")
@@ -2841,6 +2886,92 @@ class AvisoAutomation:
             except:
                 pass
             return result
+    
+    def _click_button_in_specific_frame(self, frame_info: Dict) -> bool:
+        """Переключение на конкретный фрейм только для клика"""
+        try:
+            frame_name = frame_info.get('frame_name', '')
+            frame_type = frame_info.get('frame_type', '')
+            frame_index = frame_info.get('frame_index', 0)
+            
+            logging.info(f"🔄 Переключение на {frame_type}: name='{frame_name}', index={frame_index}")
+            
+            # Переключаемся по имени или индексу
+            if frame_name:
+                try:
+                    self.driver.switch_to.frame(frame_name)
+                except:
+                    if frame_type == 'iframe':
+                        iframe_element = self.driver.find_elements(By.TAG_NAME, "iframe")[frame_index]
+                        self.driver.switch_to.frame(iframe_element)
+                    else:
+                        frame_element = self.driver.find_elements(By.TAG_NAME, "frame")[frame_index]
+                        self.driver.switch_to.frame(frame_element)
+            else:
+                if frame_type == 'iframe':
+                    iframe_element = self.driver.find_elements(By.TAG_NAME, "iframe")[frame_index]
+                    self.driver.switch_to.frame(iframe_element)
+                else:
+                    frame_element = self.driver.find_elements(By.TAG_NAME, "frame")[frame_index]
+                    self.driver.switch_to.frame(frame_element)
+            
+            # Ищем и кликаем кнопку
+            button_element = self.driver.execute_script("""
+                var buttonSelectors = [
+                    'a.btn_capt', 
+                    'a[href*="vlss?view=ok"]', 
+                    'a[href*="view=ok"]',
+                    'button',
+                    'a[onclick*="view=ok"]',
+                    'a[onclick*="vlss"]'
+                ];
+                
+                for (var s = 0; s < buttonSelectors.length; s++) {
+                    try {
+                        var elements = document.querySelectorAll(buttonSelectors[s]);
+                        for (var b = 0; b < elements.length; b++) {
+                            var element = elements[b];
+                            var text = element.textContent.trim().toLowerCase();
+                            var href = element.href || '';
+                            var onclick = element.getAttribute('onclick') || '';
+                            
+                            if (element.offsetParent !== null && 
+                                (text.includes('подтвердить') || 
+                                 text.includes('просмотр') ||
+                                 text.includes('confirm') ||
+                                 text.includes('ok') ||
+                                 href.includes('vlss?view=ok') ||
+                                 href.includes('view=ok') ||
+                                 onclick.includes('view=ok') ||
+                                 onclick.includes('vlss'))) {
+                                return element;
+                            }
+                        }
+                    } catch (e) {
+                        // Игнорируем ошибки селекторов
+                    }
+                }
+                return null;
+            """)
+            
+            if button_element:
+                self.driver.execute_script("arguments[0].click();", button_element)
+                logging.info("✅ Нажата кнопка подтверждения")
+                time.sleep(5)
+                self.driver.switch_to.default_content()
+                return True
+            else:
+                logging.error("❌ Кнопка не найдена при переключении")
+                self.driver.switch_to.default_content()
+                return False
+                
+        except Exception as e:
+            logging.error(f"❌ Ошибка клика в frame: {e}")
+            try:
+                self.driver.switch_to.default_content()
+            except:
+                pass
+            return False
 
     # ========== LETTER TASKS ==========
     def get_letter_tasks(self) -> List[Dict]:
@@ -2850,7 +2981,7 @@ class AvisoAutomation:
         try:
             if "/tasks-letter" not in self.driver.current_url:
                 self.driver.get(f"{self.base_url}/tasks-letter")
-                time.sleep(3)
+                time.sleep(2)
             
             letter_tasks_data = self.driver.execute_script("""
                 var tasks = [];
@@ -2901,6 +3032,75 @@ class AvisoAutomation:
         except Exception as e:
             logging.error(f"❌ Ошибка получения заданий писем: {e}")
             return []
+
+    def get_surf_tasks(self) -> List[Dict]:
+        """Получение заданий на серфинг"""
+        logging.info("🌊 Поиск заданий на серфинг...")
+        
+        try:
+            if "/tasks-surf" not in self.driver.current_url:
+                self.driver.get(f"{self.base_url}/tasks-surf")
+                time.sleep(2)
+            
+            surf_tasks_data = self.driver.execute_script("""
+                var tasks = [];
+                var rows = document.querySelectorAll("tr[class^='de_']");
+                
+                for (var i = 0; i < rows.length; i++) {
+                    try {
+                        var row = rows[i];
+                        var className = row.className;
+                        var taskIdMatch = className.match(/de_(\\d+)/);
+                        
+                        if (taskIdMatch) {
+                            var taskId = taskIdMatch[1];
+                            var startDiv = row.querySelector("div[id='start-serf-" + taskId + "']");
+                            
+                            if (startDiv) {
+                                var link = startDiv.querySelector("a");
+                                if (link) {
+                                    var title = link.textContent.trim();
+                                    var url = link.getAttribute('title') || link.getAttribute('href') || 'unknown';
+                                    
+                                    tasks.push({
+                                        id: taskId,
+                                        title: title,
+                                        url: url,
+                                        row_class: className,
+                                        start_div_id: "start-serf-" + taskId
+                                    });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Пропускаем ошибочные элементы
+                    }
+                }
+                
+                return tasks;
+            """)
+            
+            tasks = []
+            for task_data in surf_tasks_data:
+                try:
+                    task_info = {
+                        'id': task_data['id'],
+                        'title': task_data['title'],
+                        'url': task_data['url'],
+                        'row_class': task_data['row_class'],
+                        'start_div_id': task_data['start_div_id']
+                    }
+                    tasks.append(task_info)
+                except Exception as e:
+                    logging.debug(f"⚠ Ошибка создания задания серфинга: {e}")
+                    continue
+            
+            logging.info(f"🌊 Найдено серфинг заданий: {len(tasks)}")
+            return tasks
+            
+        except Exception as e:
+            logging.error(f"❌ Ошибка получения серфинг заданий: {e}")
+            return []
     
     def execute_letter_task(self, task: Dict) -> bool:
         """Выполнение задания на чтение письма"""
@@ -2910,7 +3110,7 @@ class AvisoAutomation:
         try:
             if "/tasks-letter" not in self.driver.current_url:
                 self.driver.get(f"{self.base_url}/tasks-letter")
-                time.sleep(3)
+                time.sleep(2)  # Уменьшено
             
             try:
                 start_div = self.driver.find_element(By.ID, task['start_div_id'])
@@ -2922,8 +3122,9 @@ class AvisoAutomation:
                 logging.error(f"❌ Ошибка поиска элементов письмо задания {task_id}: {e}")
                 return False
             
-            pause = random.uniform(0.5, 5)
-            logging.info(f"⏳ Пауза перед кликом {pause:.1f}с")
+            # СЛУЧАЙНАЯ ЗАДЕРЖКА перед кликом
+            pause = random.uniform(1, 5)
+            logging.info(f"⏳ Случайная пауза перед кликом {pause:.1f}с")
             time.sleep(pause)
             
             try:
@@ -2931,7 +3132,7 @@ class AvisoAutomation:
             except ElementClickInterceptedException:
                 self.driver.execute_script("arguments[0].click();", start_link)
             
-            time.sleep(3)
+            time.sleep(2)  # Уменьшено
             
             wait = WebDriverWait(self.driver, 30)
             
@@ -2939,18 +3140,32 @@ class AvisoAutomation:
                 start_reading_button = wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "a.start-yes-serf"))
                 )
+                
+                # СЛУЧАЙНАЯ ЗАДЕРЖКА перед подтверждением чтения
+                confirm_pause = random.uniform(1, 5)
+                logging.info(f"⏳ Случайная пауза перед подтверждением чтения: {confirm_pause:.1f}с")
+                time.sleep(confirm_pause)
+                
                 start_reading_button.click()
                 logging.info("✅ Нажата кнопка 'Приступить к чтению'")
             except:
                 logging.error("❌ Не найдена кнопка 'Приступить к чтению'")
+                # Обновляем страницу в случае ошибки
+                logging.info("🔄 Обновление страницы чтения писем...")
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
                 return False
             
-            time.sleep(5)
+            time.sleep(3)  # Уменьшено с 5
             
             # Извлечение данных письма
             letter_data = self.extract_letter_data()
             if not letter_data:
                 logging.error("❌ Не удалось извлечь данные письма")
+                # Обновляем страницу в случае ошибки
+                logging.info("🔄 Обновление страницы чтения писем...")
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
                 return False
             
             # Имитация чтения
@@ -2960,24 +3175,32 @@ class AvisoAutomation:
             
             logging.info(f"📚 Имитация чтения письма ({reading_time:.1f}с)...")
             
-            # Случайные прокрутки во время чтения
-            scroll_count = max(3, int(reading_time / 10))
+            # УЛУЧШЕННАЯ случайная прокрутка во время чтения
+            scroll_count = max(5, int(reading_time / 5))  # Увеличено количество прокруток
             scroll_interval = reading_time / scroll_count
             
             for i in range(scroll_count):
-                time.sleep(scroll_interval * random.uniform(0.8, 1.2))
-                self.random_scroll()
+                time.sleep(scroll_interval * random.uniform(0.5, 1.5))
+                
+                # Множественные случайные прокрутки
+                for _ in range(random.randint(1, 3)):
+                    self.random_scroll()
+                    time.sleep(random.uniform(0.1, 0.3))
             
-            # ИСПРАВЛЕНИЕ: Получение ответа от GPT без случайного выбора
+            # Получение ответа от GPT
             gpt_answer = self.gpt_manager.ask_gpt(
                 letter_data['text'], 
                 letter_data['question'], 
                 letter_data['answers']
             )
             
-            # ИСПРАВЛЕНИЕ: Проверка успешности получения ответа
+            # Проверка успешности получения ответа
             if gpt_answer is None:
                 logging.error("❌ Не удалось получить ответ от GPT. Пропускаем задание.")
+                # Обновляем страницу в случае ошибки
+                logging.info("🔄 Обновление страницы чтения писем...")
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
                 return False
             
             # Клик по выбранному ответу
@@ -2988,31 +3211,56 @@ class AvisoAutomation:
                     logging.info(f"🤖 Выбираю ответ {gpt_answer}: {letter_data['answers'][answer_index][:30]}...")
                     
                     selected_link.click()
-                    time.sleep(5)
+                    time.sleep(3)  # Уменьшено с 5
                     
-                    # ИСПРАВЛЕНИЕ: Ожидание завершения ТОЛЬКО в frame
+                    # Ожидание завершения ТОЛЬКО в frame
                     if self.wait_for_letter_timer_and_captcha():
                         logging.info("✅ Письмо задание завершено!")
                         
+                        # Обновляем страницу после выполнения
+                        logging.info("🔄 Обновление страницы чтения писем...")
                         self.driver.get(f"{self.base_url}/tasks-letter")
-                        time.sleep(5)
+                        time.sleep(3)  # Уменьшено с 5
                         
                         return True
                     else:
                         logging.error("❌ Ошибка завершения письма")
+                        # Обновляем страницу в случае ошибки
+                        logging.info("🔄 Обновление страницы чтения писем...")
+                        self.driver.get(f"{self.base_url}/tasks-letter")
+                        time.sleep(3)
                         return False
                 else:
                     logging.error(f"❌ Неверный индекс ответа: {gpt_answer}")
+                    # Обновляем страницу в случае ошибки
+                    logging.info("🔄 Обновление страницы чтения писем...")
+                    self.driver.get(f"{self.base_url}/tasks-letter")
+                    time.sleep(3)
                     return False
             except ValueError:
                 logging.error(f"❌ Некорректный ответ от GPT: {gpt_answer}")
+                # Обновляем страницу в случае ошибки
+                logging.info("🔄 Обновление страницы чтения писем...")
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
                 return False
             except Exception as e:
                 logging.error(f"❌ Ошибка обработки ответа GPT: {e}")
+                # Обновляем страницу в случае ошибки
+                logging.info("🔄 Обновление страницы чтения писем...")
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
                 return False
                 
         except Exception as e:
             logging.error(f"❌ Ошибка письмо задания {task_id}: {e}")
+            # Обновляем страницу в случае ошибки
+            logging.info("🔄 Обновление страницы чтения писем...")
+            try:
+                self.driver.get(f"{self.base_url}/tasks-letter")
+                time.sleep(3)
+            except:
+                pass
             return False
     
     def extract_letter_data(self) -> Optional[Dict]:
@@ -3077,13 +3325,13 @@ class AvisoAutomation:
             while checks_count < max_wait_time:
                 checks_count += 1
                 
-                # ИСПРАВЛЕНИЕ: Сразу ищем в frame
+                # МГНОВЕННЫЙ поиск в frame
                 frame_result = self.search_letter_elements_in_frames_detailed()
                 
                 if frame_result['timer_found']:
                     timer_value = frame_result.get('timer_value')
                     if timer_value is not None:
-                        if checks_count % 10 == 0:
+                        if checks_count % 5 == 0:  # Уменьшено с 10
                             logging.info(f"⏰ Таймер письма: {timer_value}с")
                         
                         if timer_value <= 1:
@@ -3101,7 +3349,7 @@ class AvisoAutomation:
                     return False
             
             # Прохождение капчи в frame
-            time.sleep(2)
+            time.sleep(1)  # Уменьшено
             
             captcha_result = self.handle_captcha_in_frames_detailed()
             
@@ -3117,7 +3365,9 @@ class AvisoAutomation:
             return False
 
     def search_letter_elements_in_frames_detailed(self) -> Dict:
-        """ИСПРАВЛЕННЫЙ поиск элементов письма в frame с детальной отладкой"""
+        """ИСПРАВЛЕННЫЙ поиск элементов письма в frame с мгновенным переключением"""
+        logging.info("🔍 НАЧАЛО ДЕТАЛЬНОГО ПОИСКА ЭЛЕМЕНТОВ ПИСЬМА В FRAME")
+        
         result = {
             'timer_found': False,
             'timer_value': None,
@@ -3126,172 +3376,149 @@ class AvisoAutomation:
         }
         
         try:
-            # Получаем информацию о frame
+            # Мгновенное получение информации о frame
+            logging.info("📊 Получение информации о всех frame на странице...")
+            
             frame_info = self.driver.execute_script("""
                 var frames = [];
                 var iframes = document.getElementsByTagName('iframe');
                 var frameElements = document.getElementsByTagName('frame');
                 
+                console.log('Найдено iframe:', iframes.length);
+                console.log('Найдено frame:', frameElements.length);
+                
                 for (var i = 0; i < iframes.length; i++) {
+                    var iframe = iframes[i];
                     frames.push({
                         type: 'iframe',
                         index: i,
-                        name: iframes[i].name || '',
-                        src: iframes[i].src || '',
-                        id: iframes[i].id || ''
+                        name: iframe.name || '',
+                        src: iframe.src || '',
+                        id: iframe.id || '',
+                        width: iframe.width || iframe.offsetWidth || 0,
+                        height: iframe.height || iframe.offsetHeight || 0,
+                        visible: iframe.offsetParent !== null
                     });
                 }
                 
                 for (var i = 0; i < frameElements.length; i++) {
+                    var frame = frameElements[i];
                     frames.push({
                         type: 'frame',
                         index: i,
-                        name: frameElements[i].name || '',
-                        src: frameElements[i].src || '',
-                        id: frameElements[i].id || ''
+                        name: frame.name || '',
+                        src: frame.src || '',
+                        id: frame.id || '',
+                        visible: frame.offsetParent !== null
                     });
                 }
                 
                 return frames;
             """)
             
-            logging.info(f"🔍 Поиск элементов письма в {len(frame_info)} frame")
+            logging.info(f"📊 Найдено frame/iframe: {len(frame_info)}")
             
-            for frame in frame_info:
+            for i, frame in enumerate(frame_info):
+                logging.info(f"📄 Frame {i+1}: type={frame['type']}, name='{frame['name']}', id='{frame['id']}', src='{frame['src'][:50]}...', visible={frame.get('visible', 'unknown')}")
+                
+                if frame['type'] == 'iframe':
+                    logging.info(f"   📐 Размеры iframe: {frame.get('width', 'unknown')}x{frame.get('height', 'unknown')}")
+            
+            processed_frames = 0
+            
+            for frame_index, frame in enumerate(frame_info):
+                frame_type = frame['type']
+                frame_name = frame['name']
+                frame_id = frame['id']
+                frame_src = frame['src']
+                
+                logging.info(f"🔄 Обработка Frame {frame_index+1}/{len(frame_info)}: {frame_type} '{frame_name}' (ID: {frame_id})")
+                
                 try:
-                    frame_type = frame['type']
-                    frame_name = frame['name']
-                    frame_src = frame['src']
+                    # МГНОВЕННОЕ переключение на frame
+                    logging.info("🔄 Попытка переключения на frame...")
                     
-                    logging.info(f"🔄 Проверка {frame_type}: name='{frame_name}', src='{frame_src}'")
+                    switch_success = False
+                    switch_method = ""
                     
-                    # Переключаемся на frame
                     if frame_name:
                         try:
+                            logging.info(f"🎯 Переключение по имени: '{frame_name}'")
                             self.driver.switch_to.frame(frame_name)
-                        except:
+                            switch_success = True
+                            switch_method = f"name='{frame_name}'"
+                        except Exception as e:
+                            logging.warning(f"⚠ Ошибка переключения по имени: {e}")
+                            
+                            # Попытка через элемент
+                            try:
+                                if frame_type == 'iframe':
+                                    logging.info(f"🎯 Переключение через элемент iframe[{frame['index']}]")
+                                    iframe_element = self.driver.find_elements(By.TAG_NAME, "iframe")[frame['index']]
+                                    self.driver.switch_to.frame(iframe_element)
+                                    switch_success = True
+                                    switch_method = f"iframe_element[{frame['index']}]"
+                                else:
+                                    logging.info(f"🎯 Переключение через элемент frame[{frame['index']}]")
+                                    frame_element = self.driver.find_elements(By.TAG_NAME, "frame")[frame['index']]
+                                    self.driver.switch_to.frame(frame_element)
+                                    switch_success = True
+                                    switch_method = f"frame_element[{frame['index']}]"
+                            except Exception as e2:
+                                logging.error(f"❌ Ошибка переключения через элемент: {e2}")
+                    else:
+                        # Переключение через элемент если нет имени
+                        try:
                             if frame_type == 'iframe':
+                                logging.info(f"🎯 Переключение через элемент iframe[{frame['index']}] (без имени)")
                                 iframe_element = self.driver.find_elements(By.TAG_NAME, "iframe")[frame['index']]
                                 self.driver.switch_to.frame(iframe_element)
+                                switch_success = True
+                                switch_method = f"iframe_element[{frame['index']}]_no_name"
                             else:
+                                logging.info(f"🎯 Переключение через элемент frame[{frame['index']}] (без имени)")
                                 frame_element = self.driver.find_elements(By.TAG_NAME, "frame")[frame['index']]
                                 self.driver.switch_to.frame(frame_element)
-                    else:
-                        if frame_type == 'iframe':
-                            iframe_element = self.driver.find_elements(By.TAG_NAME, "iframe")[frame['index']]
-                            self.driver.switch_to.frame(iframe_element)
-                        else:
-                            frame_element = self.driver.find_elements(By.TAG_NAME, "frame")[frame['index']]
-                            self.driver.switch_to.frame(frame_element)
+                                switch_success = True
+                                switch_method = f"frame_element[{frame['index']}]_no_name"
+                        except Exception as e:
+                            logging.error(f"❌ Ошибка переключения через элемент (без имени): {e}")
                     
+                    if not switch_success:
+                        logging.error(f"❌ Не удалось переключиться на frame {frame_index+1}")
+                        continue
+                    
+                    logging.info(f"✅ Успешно переключились на frame через {switch_method}")
                     result['iframe_switched'] = True
+                    processed_frames += 1
                     
-                    # Поиск таймера и капчи в frame
-                    frame_status = self.driver.execute_script("""
-                        var result = {
-                            timer_found: false,
-                            timer_value: null,
-                            captcha_found: false,
-                            debug_info: {
-                                url: window.location.href,
-                                title: document.title,
-                                body_text: document.body ? document.body.textContent.substring(0, 500) : 'no body',
-                                all_timers: [],
-                                all_captcha: []
-                            }
-                        };
-                        
-                        // Поиск таймера
-                        var timerSelectors = ['span.timer#tmr', 'span#tmr', '.tmr', 'span.timer', '*[id*="tmr"]', '*[id*="timer"]', 'span'];
-                        
-                        for (var s = 0; s < timerSelectors.length; s++) {
-                            try {
-                                var elements = document.querySelectorAll(timerSelectors[s]);
-                                for (var t = 0; t < elements.length; t++) {
-                                    var element = elements[t];
-                                    var elementText = element.textContent.trim();
-                                    
-                                    result.debug_info.all_timers.push({
-                                        selector: timerSelectors[s],
-                                        text: elementText,
-                                        visible: element.offsetParent !== null,
-                                        id: element.id,
-                                        className: element.className
-                                    });
-                                    
-                                    if (element.offsetParent !== null && /^\\d+$/.test(elementText)) {
-                                        result.timer_found = true;
-                                        result.timer_value = parseInt(elementText);
-                                    }
-                                }
-                            } catch (e) {
-                                // Пропускаем ошибки
-                            }
-                        }
-                        
-                        // Поиск капчи
-                        var captchaSelectors = ['input[name="code"][type="range"]', 'input[type="range"]', 'input[name="code"]'];
-                        
-                        for (var s = 0; s < captchaSelectors.length; s++) {
-                            try {
-                                var elements = document.querySelectorAll(captchaSelectors[s]);
-                                for (var c = 0; c < elements.length; c++) {
-                                    var element = elements[c];
-                                    
-                                    result.debug_info.all_captcha.push({
-                                        selector: captchaSelectors[s],
-                                        type: element.type,
-                                        name: element.name,
-                                        visible: element.offsetParent !== null,
-                                        id: element.id,
-                                        className: element.className
-                                    });
-                                    
-                                    if (element.offsetParent !== null) {
-                                        result.captcha_found = true;
-                                    }
-                                }
-                            } catch (e) {
-                                // Пропускаем ошибки
-                            }
-                        }
-                        
-                        return result;
-                    """)
-                    
-                    # Логируем результаты
-                    logging.info(f"📊 Frame '{frame_name}' элементы письма:")
-                    logging.info(f"   URL: {frame_status['debug_info']['url']}")
-                    logging.info(f"   Заголовок: {frame_status['debug_info']['title']}")
-                    logging.info(f"   Текст: {frame_status['debug_info']['body_text'][:200]}...")
-                    
-                    # Детальная информация о таймерах
-                    for timer in frame_status['debug_info']['all_timers']:
-                        logging.info(f"   ⏰ Таймер: '{timer['text']}' (видимый: {timer['visible']}, id: {timer['id']})")
-                    
-                    # Детальная информация о капче
-                    for captcha in frame_status['debug_info']['all_captcha']:
-                        logging.info(f"   🎯 Капча: type={captcha['type']}, name={captcha['name']} (видимый: {captcha['visible']}, id: {captcha['id']})")
+                    # Получение информации о содержимом frame
+                    logging.info("📊 Анализ содержимого frame...")
                     
                     # Сохраняем результаты
-                    if frame_status['timer_found']:
+                    if frame_status.get('timer_found', False):
                         result['timer_found'] = True
-                        result['timer_value'] = frame_status['timer_value']
-                        logging.info(f"✅ Найден таймер в frame '{frame_name}': {result['timer_value']}с")
+                        result['timer_value'] = frame_status.get('timer_value')
+                        logging.info(f"✅ ТАЙМЕР НАЙДЕН В FRAME {frame_index+1}: {result['timer_value']} секунд")
                     
-                    if frame_status['captcha_found']:
+                    if frame_status.get('captcha_found', False):
                         result['captcha_found'] = True
-                        logging.info(f"✅ Найдена капча в frame '{frame_name}'")
+                        logging.info(f"✅ КАПЧА НАЙДЕНА В FRAME {frame_index+1}")
                     
+                    # Возвращаемся к основному документу
+                    logging.info("🔄 Возврат к основному документу...")
                     self.driver.switch_to.default_content()
                     result['iframe_switched'] = False
                     
-                    # Если что-то найдено - возвращаем результат
+                    # Если что-то нашли - возвращаем результат
                     if result['timer_found'] or result['captcha_found']:
+                        logging.info(f"✅ Найдены элементы в frame {frame_index+1}, завершаем поиск")
                         return result
+                    else:
+                        logging.info(f"❌ Ничего не найдено в frame {frame_index+1}, продолжаем поиск...")
                     
                 except Exception as e:
-                    logging.error(f"❌ Ошибка работы с frame '{frame_name}': {e}")
+                    logging.error(f"❌ Ошибка обработки frame {frame_index+1}: {e}")
                     try:
                         self.driver.switch_to.default_content()
                         result['iframe_switched'] = False
@@ -3299,6 +3526,7 @@ class AvisoAutomation:
                         pass
                     continue
             
+            logging.info(f"📊 Обработано frame: {processed_frames}/{len(frame_info)}")
             return result
             
         except Exception as e:
@@ -3311,9 +3539,9 @@ class AvisoAutomation:
             return result
 
     def handle_captcha_in_frames_detailed(self) -> bool:
-        """ИСПРАВЛЕННАЯ обработка капчи в frame с детальной отладкой"""
+        """ИСПРАВЛЕННАЯ обработка капчи в frame с мгновенным переключением"""
         try:
-            # Получаем информацию о frame
+            # Мгновенное получение информации о frame
             frame_info = self.driver.execute_script("""
                 var frames = [];
                 var iframes = document.getElementsByTagName('iframe');
@@ -3347,7 +3575,7 @@ class AvisoAutomation:
                     frame_type = frame['type']
                     frame_name = frame['name']
                     
-                    # Переключаемся на frame
+                    # МГНОВЕННОЕ переключение на frame
                     if frame_name:
                         try:
                             self.driver.switch_to.frame(frame_name)
@@ -3385,7 +3613,11 @@ class AvisoAutomation:
                     
                     if captcha_result == 'moved':
                         logging.info(f"✅ Ползунок передвинут на максимум в frame '{frame_name}'")
-                        time.sleep(2)
+                        
+                        # СЛУЧАЙНАЯ ЗАДЕРЖКА перед отправкой
+                        submit_pause = random.uniform(1, 5)
+                        logging.info(f"⏳ Случайная пауза перед отправкой: {submit_pause:.1f}с")
+                        time.sleep(submit_pause)
                         
                         # Нажатие кнопки "Отправить"
                         submit_result = self.driver.execute_script("""
@@ -3404,7 +3636,7 @@ class AvisoAutomation:
                         if submit_result == 'clicked':
                             logging.info("✅ Нажата кнопка 'Отправить'")
                             self.driver.switch_to.default_content()
-                            time.sleep(5)
+                            time.sleep(3)  # Уменьшено с 5
                             return True
                         else:
                             logging.warning("⚠ Кнопка 'Отправить' не найдена")
@@ -3412,7 +3644,6 @@ class AvisoAutomation:
                     self.driver.switch_to.default_content()
                     
                 except Exception as e:
-                    logging.debug(f"⚠ Ошибка обработки капчи в frame '{frame_name}': {e}")
                     try:
                         self.driver.switch_to.default_content()
                     except:
@@ -3456,7 +3687,7 @@ class AvisoAutomation:
             if cookies_loaded:
                 logging.info("🔄 Применение cookies...")
                 self.driver.refresh()
-                time.sleep(3)
+                time.sleep(2)  # Уменьшено
                 
                 # ИСПРАВЛЕНИЕ: Проверка авторизации через профиль
                 if self.check_authorization():
@@ -3490,9 +3721,15 @@ class AvisoAutomation:
         """Основной бесконечный цикл"""
         logging.info("🤖 ЗАПУСК РАСШИРЕННОГО AVISO BOT")
         logging.info("🆕 ИСПРАВЛЕНИЯ:")
-        logging.info("   ✅ Исправлена ошибка GPT без случайного выбора")
+        logging.info("   ✅ Исправлена ошибка авторизации")
         logging.info("   ✅ Добавлена проверка авторизации через профиль")
-        logging.info("   ✅ Поиск элементов ТОЛЬКО в frame для серфинга и писем")
+        logging.info("   ✅ Мгновенное переключение на iframe для серфинга и писем")
+        logging.info("   ✅ Уменьшены задержки и ускорена работа")
+        logging.info("   ✅ Добавлены случайные задержки перед кликами (1-10 сек)")
+        logging.info("   ✅ Улучшена прокрутка - более частая и случайная")
+        logging.info("   ✅ Случайные User-Agent'ы вместо только Android/iPad")
+        logging.info("   ✅ Обновление страницы после каждого письма/ошибки")
+        logging.info("   ✅ Исправлены множественные клики YouTube - один клик в iframe")
         
         cycle_count = 0
         consecutive_failures = 0
@@ -3550,12 +3787,15 @@ def main():
     """Точка входа в программу"""
     print("🤖 Aviso Automation Bot - РАСШИРЕННАЯ ВЕРСИЯ")
     print("=" * 80)
-    print("🆕 НОВЫЕ ФУНКЦИИ:")
-    print("   ✅ Выполнение заданий на серфинг сайтов")
-    print("   ✅ Выполнение заданий на чтение писем с GPT-4")
-    print("   ✅ Координация между тремя типами заданий")
-    print("   ✅ ОБЯЗАТЕЛЬНОЕ использование Tor")
-    print("   ✅ Улучшенная имитация человеческого поведения")
+    print("🆕 ИСПРАВЛЕНИЯ В ЭТОЙ ВЕРСИИ:")
+    print("   ✅ Исправлена ошибка авторизации - правильная проверка профиля")
+    print("   ✅ Мгновенное переключение на iframe для серфинга и писем")
+    print("   ✅ Уменьшены задержки и ускорена работа скрипта")
+    print("   ✅ Добавлены случайные задержки 1-10 сек перед кликами")
+    print("   ✅ Улучшена прокрутка - более частая, случайная и кривая")
+    print("   ✅ Случайные User-Agent'ы вместо только Android/iPad")
+    print("   ✅ Обновление страницы после каждого письма/ошибки")
+    print("   ✅ Исправлены множественные клики YouTube - один клик в iframe")
     print("🚀 Автоматический запуск...")
     print("⚠  ВНИМАНИЕ: Используйте бота ответственно!")
     print("🔒 БОТ РАБОТАЕТ ТОЛЬКО ЧЕРЕЗ TOR!")
@@ -3570,7 +3810,7 @@ def main():
     print("   - Проверка смены IP через 2ip.ru")
     print("   - Автоматическая установка geckodriver")
     print("   - Автоматическая установка g4f для GPT-4")
-    print("   - Фиксированный User-Agent для аккаунта")
+    print("   - Случайный User-Agent для аккаунта")
     print("   - Улучшенная имитация опечаток при вводе")
     print("   - Расчет времени чтения для писем")
     print("   - Поддержка Termux/Android")
