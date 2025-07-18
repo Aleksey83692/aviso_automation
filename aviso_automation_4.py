@@ -120,70 +120,7 @@ except ImportError as e:
     logging.error("pip install selenium requests beautifulsoup4 fake-useragent webdriver-manager g4f")
     sys.exit(1)
 
-def kill_existing_tor_processes():
-    """Убиваем все существующие процессы Tor"""
-    try:
-        logging.info("🔄 Очистка существующих процессов Tor...")
-        
-        system = platform.system().lower()
-        is_termux = 'com.termux' in os.environ.get('PREFIX', '') or '/data/data/com.termux' in os.environ.get('HOME', '')
-        
-        if is_termux or system == 'linux':
-            # Убиваем все процессы tor
-            try:
-                subprocess.run(['pkill', '-f', 'tor'], capture_output=True, timeout=10)
-                time.sleep(2)
-            except:
-                pass
-            
-            # Дополнительная очистка через killall
-            try:
-                subprocess.run(['killall', 'tor'], capture_output=True, timeout=10)
-                time.sleep(2)
-            except:
-                pass
-                
-        elif system == 'windows':
-            try:
-                subprocess.run(['taskkill', '/F', '/IM', 'tor.exe'], capture_output=True, timeout=10)
-                time.sleep(2)
-            except:
-                pass
-        
-        logging.info("✓ Очистка процессов Tor завершена")
-        
-    except Exception as e:
-        logging.debug(f"⚠ Ошибка очистки процессов Tor: {e}")
-
-def find_free_port_range(start_port: int, count: int = 2) -> List[int]:
-    """Поиск нескольких свободных портов подряд"""
-    free_ports = []
-    
-    for port in range(start_port, start_port + 1000):
-        if len(free_ports) >= count:
-            break
-            
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind(('127.0.0.1', port))
-                free_ports.append(port)
-        except OSError:
-            free_ports = []  # Начинаем поиск заново
-            continue
-    
-    if len(free_ports) >= count:
-        return free_ports[:count]
-    
-    # Если не нашли подряд, берем случайные
-    import random
-    fallback_ports = []
-    for _ in range(count):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('127.0.0.1', 0))
-            fallback_ports.append(s.getsockname()[1])
-    
-    return fallback_ports
+# Tor process management functions removed - no longer needed
 
 class GeckoDriverManager:
     """Класс для управления geckodriver"""
@@ -713,437 +650,13 @@ class GPTManager:
             logging.error(f"❌ Ошибка GPT: {e}")
             return None
 
-class SimpleTorManager:
-    """УПРОЩЕННЫЙ класс для управления Tor соединением"""
-    
-    def __init__(self):
-        self.tor_port = None
-        self.control_port = None
-        self.tor_process = None
-        self.system = platform.system().lower()
-        self.is_termux = self.detect_termux()
-        
-        # Пути к временным файлам
-        self.tor_data_dir = None
-        self.torrc_path = None
-        self.stdout_log = None
-        self.stderr_log = None
-        
-    def detect_termux(self) -> bool:
-        """Определение запуска в Termux"""
-        return 'com.termux' in os.environ.get('PREFIX', '') or \
-               '/data/data/com.termux' in os.environ.get('HOME', '')
-    
-    def command_exists(self, cmd: str) -> bool:
-        """Проверка существования команды"""
-        try:
-            if self.is_termux or self.system == 'linux':
-                result = subprocess.run(['command', '-v', cmd], 
-                                      capture_output=True, text=True, shell=True)
-                return result.returncode == 0
-            elif self.system == 'windows':
-                result = subprocess.run(['where', cmd], 
-                                      capture_output=True, text=True)
-                return result.returncode == 0
-            else:  # macOS
-                result = subprocess.run(['which', cmd], 
-                                      capture_output=True, text=True)
-                return result.returncode == 0
-        except:
-            return False
-    
-    def install_tor_termux(self) -> bool:
-        """Установка Tor в Termux"""
-        try:
-            logging.info("📱 Установка Tor в Termux...")
-            
-            # Обновление пакетов
-            logging.info("🔄 Обновление списка пакетов...")
-            subprocess.run(['pkg', 'update'], check=True, 
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
-            # Установка Tor
-            logging.info("📦 Установка Tor...")
-            subprocess.run(['pkg', 'install', '-y', 'tor'], check=True,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
-            logging.info("✓ Tor успешно установлен в Termux")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            logging.error(f"✗ Ошибка установки Tor в Termux: {e}")
-            return False
-        except Exception as e:
-            logging.error(f"✗ Неожиданная ошибка установки Tor в Termux: {e}")
-            return False
-    
-    def install_tor(self) -> bool:
-        """Автоматическая установка Tor"""
-        if self.is_termux:
-            return self.install_tor_termux()
-        else:
-            logging.warning("⚠ Автоустановка Tor поддерживается только в Termux")
-            logging.info("💡 Установите Tor вручную для вашей системы")
-            return False
-    
-    def find_tor_executable(self) -> Optional[str]:
-        """Поиск исполняемого файла Tor"""
-        possible_paths = []
-        
-        if self.is_termux:
-            possible_paths = [
-                '/data/data/com.termux/files/usr/bin/tor',
-                f"{os.environ.get('PREFIX', '')}/bin/tor"
-            ]
-        elif self.system == 'linux':
-            possible_paths = [
-                '/usr/bin/tor',
-                '/usr/local/bin/tor',
-                '/opt/tor/bin/tor'
-            ]
-        elif self.system == 'windows':
-            username = os.getenv('USERNAME', 'User')
-            possible_paths = [
-                f"C:\\Users\\{username}\\Desktop\\Tor Browser\\Browser\\TorBrowser\\Tor\\tor.exe",
-                r"C:\Program Files\Tor Browser\Browser\TorBrowser\Tor\tor.exe",
-                r"C:\Program Files (x86)\Tor Browser\Browser\TorBrowser\Tor\tor.exe",
-                r"C:\Tor\tor.exe"
-            ]
-        elif self.system == 'darwin':
-            possible_paths = [
-                '/usr/local/bin/tor',
-                '/opt/homebrew/bin/tor',
-                '/Applications/Tor Browser.app/Contents/MacOS/Tor/tor'
-            ]
-        
-        # Проверяем каждый путь
-        for path in possible_paths:
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                logging.info(f"✓ Найден Tor: {path}")
-                return path
-        
-        # Проверяем через PATH
-        if self.command_exists('tor'):
-            logging.info("✓ Tor найден в PATH")
-            return 'tor'
-        
-        return None
-    
-    def check_tor_port(self) -> bool:
-        """Быстрая проверка доступности порта Tor"""
-        if not self.tor_port:
-            return False
-            
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(3)
-                result = s.connect_ex(('127.0.0.1', self.tor_port))
-                is_open = result == 0
-                logging.debug(f"🔌 Проверка порта Tor {self.tor_port}: {'открыт' if is_open else 'закрыт'}")
-                return is_open
-        except Exception as e:
-            logging.debug(f"⚠ Ошибка проверки порта Tor: {e}")
-            return False
-
-    def test_tor_connection(self) -> bool:
-        """Простое тестирование соединения через Tor"""
-        logging.info("🚀 ТЕСТИРОВАНИЕ TOR СОЕДИНЕНИЯ")
-        
-        try:
-            import requests
-            
-            proxies = {
-                'http': f'socks5://127.0.0.1:{self.tor_port}',
-                'https': f'socks5://127.0.0.1:{self.tor_port}'
-            }
-            
-            response = requests.get('http://httpbin.org/ip', proxies=proxies, timeout=30)
-            
-            if response.status_code == 200:
-                content = response.text.strip()
-                logging.info(f"✅ TOR РАБОТАЕТ! IP: {content}")
-                return True
-            else:
-                logging.error(f"❌ Неверный статус код: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            logging.error(f"❌ Ошибка тестирования Tor: {e}")
-            return False
-
-    def start_tor(self) -> bool:
-        """Запуск Tor с ПРОСТОЙ конфигурацией"""
-        logging.info("🚀 ЗАПУСК TOR С ПРОСТОЙ КОНФИГУРАЦИЕЙ")
-        
-        try:
-            # Полная очистка всех процессов Tor
-            kill_existing_tor_processes()
-            time.sleep(3)
-            
-            # Поиск Tor если не найден
-            tor_executable = self.find_tor_executable()
-            if not tor_executable:
-                logging.info("⚠ Tor не найден, попытка установки...")
-                if not self.install_tor():
-                    logging.error("❌ Не удалось установить Tor")
-                    return False
-                tor_executable = self.find_tor_executable()
-                if not tor_executable:
-                    logging.error("❌ Tor все еще не найден после установки")
-                    return False
-            
-            # Находим свободные порты
-            free_ports = find_free_port_range(9050, 2)
-            if len(free_ports) < 2:
-                logging.error("❌ Не удалось найти 2 свободных порта")
-                return False
-            
-            self.tor_port = free_ports[0]      # SOCKS порт
-            self.control_port = free_ports[1]  # Control порт
-            
-            logging.info(f"🔌 Используем порты: SOCKS={self.tor_port}, Control={self.control_port}")
-            
-            # Создаем временную директорию для данных Tor
-            import tempfile
-            import getpass
-            
-            try:
-                current_user = getpass.getuser()
-            except:
-                current_user = "user"
-            
-            temp_dir = tempfile.gettempdir()
-            tor_data_dir = os.path.join(temp_dir, f"tor_data_{current_user}_{os.getpid()}")
-            
-            # Полностью удаляем старую директорию если существует
-            if os.path.exists(tor_data_dir):
-                shutil.rmtree(tor_data_dir, ignore_errors=True)
-            
-            # Создаем новую директорию
-            os.makedirs(tor_data_dir, mode=0o700, exist_ok=True)
-            
-            logging.info(f"📁 Директория данных Tor: {tor_data_dir}")
-            
-            # ПРОСТАЯ конфигурация Tor
-            tor_config = f"""SocksPort {self.tor_port}
-ControlPort {self.control_port}
-DataDirectory {tor_data_dir}
-Log notice stdout
-"""
-            
-            # Записываем конфиг во временную директорию
-            torrc_path = os.path.join(temp_dir, f"torrc_temp_{os.getpid()}")
-            with open(torrc_path, "w") as f:
-                f.write(tor_config)
-            
-            logging.debug(f"📄 Конфиг Tor сохранен в: {torrc_path}")
-            logging.info("📄 Конфигурация Tor (ПРОСТАЯ):")
-            logging.info(tor_config)
-            
-            # Запускаем Tor
-            cmd = [tor_executable, "-f", torrc_path]
-            
-            logging.info(f"🚀 Команда запуска Tor: {' '.join(cmd)}")
-            
-            # Создаем файлы для логов
-            stdout_log = os.path.join(temp_dir, f"tor_stdout_{os.getpid()}.log")
-            stderr_log = os.path.join(temp_dir, f"tor_stderr_{os.getpid()}.log")
-            
-            with open(stdout_log, "w") as stdout_file, \
-                 open(stderr_log, "w") as stderr_file:
-                
-                if self.system == 'windows':
-                    self.tor_process = subprocess.Popen(
-                        cmd,
-                        stdout=stdout_file,
-                        stderr=stderr_file,
-                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-                    )
-                else:
-                    self.tor_process = subprocess.Popen(
-                        cmd,
-                        stdout=stdout_file,
-                        stderr=stderr_file,
-                        preexec_fn=os.setsid
-                    )
-            
-            # Сохраняем пути для очистки
-            self.tor_data_dir = tor_data_dir
-            self.torrc_path = torrc_path
-            self.stdout_log = stdout_log
-            self.stderr_log = stderr_log
-            
-            logging.info(f"🔄 PID процесса Tor: {self.tor_process.pid}")
-            
-            # Ждем запуска Tor - ТАЙМАУТ НЕ ИЗМЕНЕН - 20 МИНУТ
-            logging.info("⏳ ОЖИДАНИЕ ЗАПУСКА TOR (до 20 минут)...")
-            port_ready = False
-            bootstrap_complete = False
-            
-            for i in range(600):  # 600 попыток по 2 секунды = 20 минут
-                time.sleep(2)
-                
-                # Проверяем что процесс еще жив
-                if self.tor_process.poll() is not None:
-                    logging.error(f"❌ Процесс Tor завершился с кодом {self.tor_process.poll()}")
-                    self.log_tor_errors()
-                    return False
-                
-                # Проверяем порт
-                if not port_ready and self.check_tor_port():
-                    logging.info("✅ Tor порт готов")
-                    port_ready = True
-                
-                # Проверяем логи на предмет bootstrap
-                if port_ready and not bootstrap_complete:
-                    try:
-                        if os.path.exists(stdout_log):
-                            with open(stdout_log, "r") as f:
-                                log_content = f.read()
-                                if "Bootstrapped 100%" in log_content:
-                                    logging.info("✅ Tor bootstrap завершен на 100%")
-                                    bootstrap_complete = True
-                                    break
-                                elif "Bootstrapped" in log_content:
-                                    # Показываем прогресс
-                                    import re
-                                    matches = re.findall(r'Bootstrapped (\d+)%', log_content)
-                                    if matches:
-                                        last_percent = matches[-1]
-                                        logging.info(f"🔄 Tor bootstrap: {last_percent}%")
-                    except:
-                        pass
-                
-                # Показываем прогресс каждые 60 секунд
-                if i % 30 == 0:  # Каждые 60 секунд
-                    elapsed_minutes = (i * 2) / 60
-                    logging.info(f"⏳ Ожидание Tor... ({elapsed_minutes:.1f}/20 минут)")
-            
-            if not port_ready:
-                logging.error("❌ Tor порт не запустился в течение отведенного времени")
-                self.log_tor_errors()
-                return False
-            
-            # Тестирование соединения
-            logging.info("🔍 ТЕСТИРОВАНИЕ СОЕДИНЕНИЯ...")
-            if self.test_tor_connection():
-                logging.info("✅ TOR УСПЕШНО ЗАПУЩЕН И РАБОТАЕТ!")
-                return True
-            else:
-                logging.error("❌ Tor запущен, но соединение не работает")
-                self.log_tor_errors()
-                return False
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка запуска Tor: {e}")
-            return False
-
-    def log_tor_errors(self):
-        """Вывод ошибок Tor из логов"""
-        logging.info("📋 АНАЛИЗ ЛОГОВ TOR...")
-        
-        try:
-            stderr_log = getattr(self, 'stderr_log', './tor_stderr.log')
-            stdout_log = getattr(self, 'stdout_log', './tor_stdout.log')
-            
-            if stderr_log and os.path.exists(stderr_log):
-                with open(stderr_log, "r") as f:
-                    stderr_content = f.read().strip()
-                    if stderr_content:
-                        logging.error(f"🚨 ОШИБКИ TOR:\n{stderr_content}")
-                    else:
-                        logging.info("📝 Ошибки Tor отсутствуют")
-            
-            if stdout_log and os.path.exists(stdout_log):
-                with open(stdout_log, "r") as f:
-                    stdout_content = f.read().strip()
-                    if stdout_content:
-                        logging.info(f"📄 ВЫВОД TOR:\n{stdout_content}")
-                        
-                        # Анализ состояния
-                        if "Bootstrapped 100%" in stdout_content:
-                            logging.info("✅ Tor успешно загрузился на 100%")
-                        elif "Bootstrapped" in stdout_content:
-                            # Ищем последний процент загрузки
-                            import re
-                            matches = re.findall(r'Bootstrapped (\d+)%', stdout_content)
-                            if matches:
-                                last_percent = matches[-1]
-                                logging.warning(f"⚠ Tor загружен только на {last_percent}%")
-                        
-                        if "Opening Socks listener" in stdout_content:
-                            logging.info("✅ SOCKS прокси запущен")
-                    else:
-                        logging.warning("📝 Вывод Tor пуст")
-                        
-        except Exception as e:
-            logging.debug(f"⚠ Ошибка чтения логов Tor: {e}")
-    
-    def stop_tor(self):
-        """Остановка Tor"""
-        try:
-            if self.tor_process:
-                logging.info("🛑 Остановка Tor...")
-                
-                if self.system == 'windows':
-                    self.tor_process.terminate()
-                else:
-                    try:
-                        os.killpg(os.getpgid(self.tor_process.pid), 15)  # SIGTERM
-                    except:
-                        self.tor_process.terminate()
-                
-                # Ждем завершения - ТАЙМАУТ НЕ ИЗМЕНЕН
-                try:
-                    self.tor_process.wait(timeout=5)
-                    logging.info("✓ Tor остановлен корректно")
-                except subprocess.TimeoutExpired:
-                    logging.warning("⚠ Принудительное завершение Tor...")
-                    if self.system == 'windows':
-                        self.tor_process.kill()
-                    else:
-                        try:
-                            os.killpg(os.getpgid(self.tor_process.pid), 9)  # SIGKILL
-                        except:
-                            self.tor_process.kill()
-                    
-                    self.tor_process.wait(timeout=3)
-                    logging.info("✓ Tor принудительно остановлен")
-                
-                self.tor_process = None
-                
-            # Очистка временных файлов
-            temp_files = [
-                getattr(self, 'torrc_path', None),
-                getattr(self, 'stdout_log', None),
-                getattr(self, 'stderr_log', None)
-            ]
-            
-            for temp_file in temp_files:
-                try:
-                    if temp_file and os.path.exists(temp_file):
-                        os.remove(temp_file)
-                        logging.debug(f"🗑 Удален файл: {temp_file}")
-                except Exception as e:
-                    logging.debug(f"⚠ Ошибка удаления {temp_file}: {e}")
-            
-            # Очистка директории данных
-            tor_data_dir = getattr(self, 'tor_data_dir', None)
-            try:
-                if tor_data_dir and os.path.exists(tor_data_dir):
-                    shutil.rmtree(tor_data_dir, ignore_errors=True)
-                    logging.debug(f"🗑 Удалена директория: {tor_data_dir}")
-            except Exception as e:
-                logging.debug(f"⚠ Ошибка удаления директории {tor_data_dir}: {e}")
-                    
-        except Exception as e:
-            logging.debug(f"⚠ Ошибка остановки Tor: {e}")
+# SimpleTorManager class removed - browser now works without Tor proxy
 
 class TaskCoordinator:
     """Класс для координации выполнения разных типов заданий"""
     
     def __init__(self):
-        self.task_types = ['youtube', 'surf', 'letters']
+        self.task_types = ['surf', 'letters']  # Removed 'youtube'
         self.current_cycle_tasks = []
         self.reset_cycle()
     
@@ -1166,973 +679,7 @@ class TaskCoordinator:
         """Проверка завершения цикла"""
         return len(self.current_cycle_tasks) == 0
 
-class YouTubeTaskHandler:
-    """Класс для обработки YouTube заданий"""
-    
-    def __init__(self, driver, base_url):
-        self.driver = driver
-        self.base_url = base_url
-    
-    def get_tasks(self) -> List[Dict]:
-        """Поиск YouTube заданий с правильными селекторами"""
-        logging.info("📋 Поиск YouTube заданий...")
-        
-        try:
-            if "/tasks-youtube" not in self.driver.current_url:
-                self.driver.get(f"{self.base_url}/tasks-youtube")
-                time.sleep(1)  # Ускорено
-            
-            tasks_data = self.driver.execute_script("""
-                var tasks = [];
-                var rows = document.querySelectorAll("tr[class^='ads_']");
-                
-                for (var i = 0; i < rows.length; i++) {
-                    try {
-                        var row = rows[i];
-                        var className = row.className;
-                        var taskIdMatch = className.match(/ads_(\\d+)/);
-                        
-                        if (taskIdMatch) {
-                            var taskId = taskIdMatch[1];
-                            
-                            var startButton = row.querySelector("span[id='link_ads_start_" + taskId + "']");
-                            
-                            if (startButton && startButton.onclick) {
-                                var buttonText = startButton.textContent || startButton.innerText || '';
-                                var buttonTitle = startButton.getAttribute('title') || '';
-                                var parentText = startButton.parentElement ? startButton.parentElement.textContent : '';
-                                
-                                if (buttonText.includes('создать') || buttonText.includes('реклам') || 
-                                    buttonTitle.includes('создать') || buttonTitle.includes('реклам') ||
-                                    buttonText.includes('управление') || buttonTitle.includes('управление') ||
-                                    parentText.includes('создать') || parentText.includes('реклам')) {
-                                    continue;
-                                }
-                                
-                                var onclick = startButton.getAttribute('onclick');
-                                var timeMatch = onclick ? onclick.match(/start_youtube_new\\(\\d+,\\s*'(\\d+)'\\)/) : null;
-                                var watchTime = timeMatch ? parseInt(timeMatch[1]) : 10;
-                                var videoUrl = startButton.getAttribute('title') || 'unknown';
-                                
-                                // Extract earnings
-                                var earningsSpan = row.querySelector('span[title="Стоимость просмотра"]');
-                                var earnings = 0;
-                                if (earningsSpan) {
-                                    var earningsText = earningsSpan.textContent.trim();
-                                    var earningsMatch = earningsText.match(/([\\d.]+)/);
-                                    if (earningsMatch) {
-                                        earnings = parseFloat(earningsMatch[1]);
-                                    }
-                                }
-                                
-                                tasks.push({
-                                    id: taskId,
-                                    watch_time: watchTime,
-                                    video_url: videoUrl,
-                                    button_selector: "tr.ads_" + taskId + " span[id='link_ads_start_" + taskId + "']",
-                                    row_selector: "tr.ads_" + taskId,
-                                    earnings: earnings
-                                });
-                            }
-                        }
-                    } catch (e) {
-                        // Пропускаем ошибочные элементы
-                    }
-                }
-                
-                return tasks;
-            """)
-            
-            tasks = []
-            for task_data in tasks_data:
-                task_info = {
-                    'id': task_data['id'],
-                    'watch_time': task_data['watch_time'],
-                    'video_url': task_data['video_url'],
-                    'button_selector': task_data['button_selector'],
-                    'row_selector': task_data['row_selector'],
-                    'earnings': task_data['earnings']
-                }
-                tasks.append(task_info)
-            
-            # Calculate and log totals
-            if tasks:
-                total_earnings = sum(task['earnings'] for task in tasks)
-                total_watch_time = sum(task['watch_time'] for task in tasks)
-                logging.info(f"Total YouTube tasks: {len(tasks)}")
-                logging.info(f"Total earnings from YouTube tasks: {total_earnings:.3f} rubles")
-                logging.info(f"Total watch time for YouTube tasks: {total_watch_time} seconds")
-            else:
-                logging.info("No YouTube tasks found")
-            
-            logging.info(f"📊 Найдено YouTube заданий: {len(tasks)}")
-            return tasks
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка получения YouTube заданий: {e}")
-            return []
-    
-    def execute_task(self, task: Dict) -> bool:
-        """Выполнение YouTube задания с проверкой антибот защиты и обработкой двух типов таймеров"""
-        task_id = task['id']
-        
-        logging.info(f"🎯 YouTube задание {task_id}")
-        
-        original_window = self.driver.current_window_handle
-        
-        try:
-            if "/tasks-youtube" not in self.driver.current_url:
-                self.driver.get(f"{self.base_url}/tasks-youtube")
-                time.sleep(1)  # Ускорено
-            
-            # ЗАНОВО находим элементы с ИСПРАВЛЕННЫМИ селекторами
-            try:
-                task_row = self.driver.find_element(By.CSS_SELECTOR, task['row_selector'])
-                start_button = self.driver.find_element(By.CSS_SELECTOR, task['button_selector'])
-            except NoSuchElementException:
-                logging.warning(f"⚠ Элементы задания {task_id} не найдены (возможно уже выполнено)")
-                return False
-            except Exception as e:
-                logging.error(f"❌ Ошибка поиска элементов задания {task_id}: {e}")
-                return False
-            
-            # Прокрутка к заданию
-            try:
-                ActionChains(self.driver).move_to_element(task_row).perform()
-            except:
-                pass
-            
-            time.sleep(random.uniform(0.2, 0.8))  # Ускорено
-            
-            # Пауза перед кликом - СЛУЧАЙНАЯ ЗАДЕРЖКА
-            pause = random.uniform(1, 5)  # Уменьшено с 1-10
-            logging.info(f"⏳ Случайная пауза перед кликом: {pause:.1f}с")
-            time.sleep(pause)
-            
-            # Клик по заданию
-            try:
-                start_button.click()
-            except ElementClickInterceptedException:
-                self.driver.execute_script("arguments[0].click();", start_button)
-            except Exception as e:
-                logging.error(f"❌ Не удалось кликнуть по заданию {task_id}: {e}")
-                return False
-            
-            time.sleep(2)  # Ожидание открытия новой вкладки
-            
-            all_windows = self.driver.window_handles
-            new_windows = [w for w in all_windows if w != original_window]
-            
-            if new_windows:
-                self.driver.switch_to.window(new_windows[0])
-                # Первый тип: таймер Aviso
-                if self.check_antibot_protection():
-                    logging.info("🚫 Антибот защита обнаружена")
-                    try:
-                        self.driver.close()
-                    except:
-                        pass
-                    self.driver.switch_to.window(original_window)
-                    return True
-                self.handle_youtube_ads()
-                self.wait_for_timer_completion(task['watch_time'])
-            else:
-                # Проверка, остались ли на странице заданий с инструкцией
-                if self.driver.current_url == f"{self.base_url}/tasks-youtube":
-                    try:
-                        instruction_div = self.driver.find_element(By.XPATH, "//div[contains(text(), 'Откройте видео и запустите просмотр.')]")
-                        if instruction_div:
-                            # Второй тип: нажатие на "Начать просмотр"
-                            begin_button = self.driver.find_element(By.XPATH, "//div[contains(@class, 'button') and .//span[text()='Начать просмотр']]")
-                            begin_button.click()
-                            time.sleep(2)
-                            all_windows = self.driver.window_handles
-                            new_windows = [w for w in all_windows if w != original_window]
-                            if new_windows:
-                                self.driver.switch_to.window(new_windows[0])
-                                if self.check_antibot_protection():
-                                    try:
-                                        self.driver.close()
-                                    except:
-                                        pass
-                                    self.driver.switch_to.window(original_window)
-                                    return True
-                                self.handle_youtube_ads()
-                                self.wait_for_timer_completion(task['watch_time'], force_youtube_timer=True)
-                            else:
-                                logging.error("Нет новой вкладки после нажатия 'Начать просмотр'")
-                                return False
-                    except NoSuchElementException:
-                        logging.error("Инструкция или кнопка 'Начать просмотр' не найдены")
-                        return False
-                else:
-                    logging.error("Не на странице заданий после клика по заданию")
-                    return False
-            
-            # После завершения
-            try:
-                self.driver.close()
-            except:
-                pass
-            self.driver.switch_to.window(original_window)
-            
-            # Перезагрузка страницы
-            logging.info("🔄 Обновление страницы YouTube заданий...")
-            self.driver.refresh()
-            time.sleep(2)  # Ускорено
-            
-            return True
-                
-        except Exception as e:
-            logging.error(f"❌ Ошибка YouTube задания {task_id}: {e}")
-            return False
-        finally:
-            # Очистка окон
-            try:
-                current_windows = self.driver.window_handles
-                if len(current_windows) > 1:
-                    for window in current_windows:
-                        if window != original_window:
-                            try:
-                                self.driver.switch_to.window(window)
-                                self.driver.close()
-                            except:
-                                pass
-                    self.driver.switch_to.window(original_window)
-            except Exception as cleanup_error:
-                logging.debug(f"⚠ Ошибка очистки окон: {cleanup_error}")
-    
-    def check_antibot_protection(self) -> bool:
-        """Проверка антибот защиты YouTube"""
-        try:
-            logging.info("🔍 Проверка антибот защиты...")
-            
-            # Проверка в главном документе
-            main_check = self.driver.execute_script("""
-                var antibotSelectors = [
-                    '.ytp-error-content-wrap-reason > span:nth-child(1)',
-                    '.ytp-error-content-wrap-reason',
-                    '.ytp-error-content-wrap',
-                    '.ytp-error-content',
-                    '.ytp-error'
-                ];
-                
-                for (var i = 0; i < antibotSelectors.length; i++) {
-                    try {
-                        var elements = document.querySelectorAll(antibotSelectors[i]);
-                        for (var j = 0; j < elements.length; j++) {
-                            var element = elements[j];
-                            if (element.offsetParent !== null) {
-                                var text = element.textContent || element.innerText || '';
-                                if (text.length > 0) {
-                                    return {
-                                        found: true,
-                                        selector: antibotSelectors[i],
-                                        text: text.substring(0, 100)
-                                    };
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        // Пропускаем ошибки
-                    }
-                }
-                
-                return {found: false};
-            """)
-            
-            if main_check['found']:
-                logging.info(f"🚫 Антибот защита в главном документе: {main_check['text']}")
-                return True
-                
-            # Проверка в YouTube iframe
-            iframe_check = self.driver.execute_script("""
-                var iframes = document.getElementsByTagName('iframe');
-                
-                for (var i = 0; i < iframes.length; i++) {
-                    var iframe = iframes[i];
-                    var src = iframe.src || '';
-                    
-                    if (src.includes('youtube.com')) {
-                        try {
-                            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                            if (iframeDoc) {
-                                var antibotSelectors = [
-                                    '.ytp-error-content-wrap-reason > span:nth-child(1)',
-                                    '.ytp-error-content-wrap-reason',
-                                    '.ytp-error-content-wrap',
-                                    '.ytp-error-content',
-                                    '.ytp-error'
-                                ];
-                                
-                                for (var s = 0; s < antibotSelectors.length; s++) {
-                                    try {
-                                        var elements = iframeDoc.querySelectorAll(antibotSelectors[s]);
-                                        for (var e = 0; e < elements.length; e++) {
-                                            var element = elements[e];
-                                            if (element.offsetParent !== null) {
-                                                var text = element.textContent || element.innerText || '';
-                                                if (text.length > 0) {
-                                                    return {
-                                                        found: true,
-                                                        selector: antibotSelectors[s],
-                                                        text: text.substring(0, 100),
-                                                        iframe_src: src
-                                                    };
-                                                }
-                                            }
-                                        }
-                                    } catch (e) {
-                                        // Пропускаем ошибки
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            // Не можем получить доступ к iframe
-                        }
-                    }
-                }
-                
-                return {found: false};
-            """)
-            
-            if iframe_check['found']:
-                logging.info(f"🚫 Антибот защита в iframe: {iframe_check['text']}")
-                return True
-                
-            # Проверка через switch_to.frame
-            try:
-                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
-                
-                for i, iframe in enumerate(iframes):
-                    try:
-                        src = iframe.get_attribute('src') or ''
-                        if 'youtube.com' not in src:
-                            continue
-                        
-                        self.driver.switch_to.frame(iframe)
-                        
-                        frame_check = self.driver.execute_script("""
-                            try {
-                                var antibotSelectors = [
-                                    '.ytp-error-content-wrap-reason > span:nth-child(1)',
-                                    '.ytp-error-content-wrap-reason',
-                                    '.ytp-error-content-wrap',
-                                    '.ytp-error-content',
-                                    '.ytp-error'
-                                ];
-                                
-                                for (var i = 0; i < antibotSelectors.length; i++) {
-                                    try {
-                                        var elements = document.querySelectorAll(antibotSelectors[i]);
-                                        for (var j = 0; j < elements.length; j++) {
-                                            var element = elements[j];
-                                            if (element.offsetParent !== null) {
-                                                var text = element.textContent || element.innerText || '';
-                                                if (text.length > 0) {
-                                                    return {
-                                                        found: true,
-                                                        selector: antibotSelectors[i],
-                                                        text: text.substring(0, 100)
-                                                    };
-                                                }
-                                            }
-                                        }
-                                    } catch (e) {
-                                        // Пропускаем ошибки
-                                    }
-                                }
-                                
-                                return {found: false};
-                            } catch (e) {
-                                return {found: false, error: e.message};
-                            }
-                        """)
-                        
-                        self.driver.switch_to.default_content()
-                        
-                        if frame_check['found']:
-                            logging.info(f"🚫 Антибот защита в iframe #{i}: {frame_check['text']}")
-                            return True
-                            
-                    except Exception as e:
-                        self.driver.switch_to.default_content()
-                        continue
-                        
-            except Exception as e:
-                logging.debug(f"⚠ Ошибка проверки через switch_to.frame: {e}")
-                self.driver.switch_to.default_content()
-            
-            # Проверка исходного кода
-            try:
-                page_source = self.driver.page_source.lower()
-                critical_errors = [
-                    'ytp-error-content-wrap',
-                    'video unavailable',
-                    'playback error',
-                    'this video is not available'
-                ]
-                
-                for error in critical_errors:
-                    if error in page_source:
-                        logging.info(f"🚫 Антибот защита в исходном коде: '{error}'")
-                        return True
-                        
-            except Exception as e:
-                logging.debug(f"⚠ Ошибка проверки исходного кода: {e}")
-            
-            logging.info("✅ Антибот защита не обнаружена")
-            return False
-            
-        except Exception as e:
-            logging.error(f"❌ Критическая ошибка проверки антибот защиты: {e}")
-            try:
-                self.driver.switch_to.default_content()
-            except:
-                pass
-            return False
-    
-    def handle_youtube_ads(self) -> bool:
-        """Обработка рекламы YouTube с поиском в iframe"""
-        logging.info("📺 Проверка рекламы...")
-        
-        try:
-            time.sleep(1)  # Ускорено
-            
-            ad_status = self.driver.execute_script("""
-                function checkInDocument(doc) {
-                    var adBadges = doc.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
-                    var hasAd = false;
-                    
-                    for (var i = 0; i < adBadges.length; i++) {
-                        if (adBadges[i].offsetParent !== null) {
-                            hasAd = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!hasAd) {
-                        return {status: 'no_ad'};
-                    }
-                    
-                    var skipButtons = doc.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
-                    for (var i = 0; i < skipButtons.length; i++) {
-                        if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
-                            return {status: 'skip_available', element: skipButtons[i]};
-                        }
-                    }
-                    
-                    return {status: 'wait_ad'};
-                }
-                
-                // Проверка в главном документе
-                var mainStatus = checkInDocument(document);
-                if (mainStatus.status !== 'no_ad') {
-                    return mainStatus;
-                }
-                
-                // Проверка в iframe
-                var iframes = document.getElementsByTagName('iframe');
-                for (var i = 0; i < iframes.length; i++) {
-                    var iframe = iframes[i];
-                    if (iframe.src.includes('youtube.com')) {
-                        try {
-                            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                            if (iframeDoc) {
-                                var iframeStatus = checkInDocument(iframeDoc);
-                                if (iframeStatus.status !== 'no_ad') {
-                                    return iframeStatus;
-                                }
-                            }
-                        } catch (e) {
-                            // Не можем получить доступ к iframe
-                        }
-                    }
-                }
-                
-                return {status: 'no_ad'};
-            """)
-            
-            if ad_status['status'] == 'no_ad':
-                return True
-            
-            if ad_status['status'] == 'skip_available':
-                self.driver.execute_script("arguments[0].click();", ad_status['element'])
-                logging.info("⏭ Реклама пропущена")
-                time.sleep(0.5)  # Ускорено
-                return True
-            
-            logging.info("📺 Ждем завершения рекламы...")
-            
-            for attempt in range(30):  # Ускорено
-                ad_finished = self.driver.execute_script("""
-                    function checkInDocument(doc) {
-                        var adBadges = doc.querySelectorAll('span.ytp-ad-badge--clean-player, [id*="ad-badge"], .ytp-ad-badge');
-                        for (var i = 0; i < adBadges.length; i++) {
-                            if (adBadges[i].offsetParent !== null) {
-                                return false;
-                            }
-                        }
-                        
-                        var skipButtons = doc.querySelectorAll('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip"]');
-                        for (var i = 0; i < skipButtons.length; i++) {
-                            if (skipButtons[i].offsetParent !== null && !skipButtons[i].disabled) {
-                                skipButtons[i].click();
-                                return true;
-                            }
-                        }
-                        
-                        return true;
-                    }
-                    
-                    var mainStatus = checkInDocument(document);
-                    if (!mainStatus) {
-                        return false;
-                    }
-                    
-                    var iframes = document.getElementsByTagName('iframe');
-                    for (var i = 0; i < iframes.length; i++) {
-                        var iframe = iframes[i];
-                        if (iframe.src.includes('youtube.com')) {
-                            try {
-                                var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                                if (iframeDoc) {
-                                    if (!checkInDocument(iframeDoc)) {
-                                        return false;
-                                    }
-                                }
-                            } catch (e) {
-                                // Не можем получить доступ к iframe
-                            }
-                        }
-                    }
-                    
-                    return true;
-                """)
-                
-                if ad_finished:
-                    logging.info("✅ Реклама завершилась")
-                    return True
-                
-                time.sleep(1)
-            
-            logging.info("✅ Реклама обработана")
-            return True
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка рекламы: {e}")
-            return True
-    
-    def click_center_screen(self):
-        """ИСПРАВЛЕННЫЙ запуск видео - ОДИН клик"""
-        try:
-            logging.info("🖱 Запуск видео...")
-            
-            # Поиск и работа с iframe - ПРИОРИТЕТ
-            iframe_success = False
-            try:
-                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
-                logging.info(f"🔍 Найдено iframe'ов: {len(iframes)}")
-                
-                for i, iframe in enumerate(iframes):
-                    try:
-                        self.driver.switch_to.frame(iframe)
-                        logging.info(f"✅ Переключились на iframe {i}")
-                        
-                        # ОДИН клик по кнопке воспроизведения
-                        success = self.driver.execute_script("""
-                            var playButtons = document.querySelectorAll(
-                                '.ytp-large-play-button, .ytp-play-button, [aria-label*="Play"], [aria-label*="Воспроизвести"]'
-                            );
-                            
-                            for (var i = 0; i < playButtons.length; i++) {
-                                try {
-                                    var button = playButtons[i];
-                                    if (button.offsetParent !== null) {
-                                        button.click();
-                                        return true;
-                                    }
-                                } catch (e) {
-                                    // Пропускаем ошибки
-                                }
-                            }
-                            
-                            return false;
-                        """)
-                        
-                        if success:
-                            logging.info("✅ Кнопка воспроизведения нажата в iframe")
-                            iframe_success = True
-                            
-                        self.driver.switch_to.default_content()
-                        
-                        if iframe_success:
-                            break
-                        
-                    except Exception as e:
-                        self.driver.switch_to.default_content()
-                        continue
-                        
-            except Exception as e:
-                logging.info(f"⚠ Не удалось работать с iframe: {e}")
-                self.driver.switch_to.default_content()
-            
-            # Если iframe сработал - проверяем результат
-            if iframe_success:
-                time.sleep(1)
-                status = self.check_video_status()
-                if status['videos_playing'] > 0:
-                    logging.info(f"✅ Видео запущено через iframe! Играющих: {status['videos_playing']}")
-                    return
-                else:
-                    logging.warning("⚠ Iframe клик не запустил видео, пробуем физический клик...")
-            
-            # Если iframe не сработал - ОДИН физический клик
-            logging.info("🖱 Выполняем ОДИН физический клик...")
-            
-            viewport_size = self.driver.get_window_size()
-            center_x = viewport_size['width'] // 2
-            center_y = viewport_size['height'] // 2
-            
-            try:
-                actions = ActionChains(self.driver)
-                actions.move_by_offset(center_x - viewport_size['width']//2, center_y - viewport_size['height']//2)
-                actions.click()
-                actions.perform()
-                logging.info(f"🖱 Выполнен физический клик в центр: ({center_x}, {center_y})")
-                
-                # Возвращаем курсор обратно
-                actions = ActionChains(self.driver)
-                actions.move_by_offset(-(center_x - viewport_size['width']//2), -(center_y - viewport_size['height']//2))
-                actions.perform()
-                
-            except Exception as e:
-                logging.warning(f"⚠ Ошибка физического клика: {e}")
-            
-            # Проверяем результат
-            time.sleep(1)
-            status = self.check_video_status()
-            if status['videos_playing'] > 0:
-                logging.info(f"✅ Видео запущено! Играющих: {status['videos_playing']}")
-                return
-            
-            # Клавиатурные команды
-            try:
-                from selenium.webdriver.common.keys import Keys
-                body = self.driver.find_element(By.TAG_NAME, "body")
-                body.send_keys(Keys.SPACE)
-                logging.info("⌨ Нажата клавиша SPACE")
-                time.sleep(0.5)
-                
-            except Exception as e:
-                logging.warning(f"⚠ Ошибка клавиатурной команды: {e}")
-            
-        except Exception as e:
-            logging.error(f"❌ Ошибка запуска видео: {e}")
-            try:
-                self.driver.switch_to.default_content()
-            except:
-                pass
-    
-    def check_video_status(self) -> Dict:
-        """Проверка статуса видео"""
-        try:
-            return self.driver.execute_script("""
-                var result = {
-                    videos_found: 0,
-                    videos_playing: 0,
-                    iframes_found: 0
-                };
-                
-                var videos = document.getElementsByTagName('video');
-                result.videos_found = videos.length;
-                
-                for (var i = 0; i < videos.length; i++) {
-                    if (!videos[i].paused && videos[i].currentTime > 0) {
-                        result.videos_playing++;
-                    }
-                }
-                
-                result.iframes_found = document.getElementsByTagName('iframe').length;
-                
-                return result;
-            """)
-        except:
-            return {'videos_found': 0, 'videos_playing': 0, 'iframes_found': 0}
-    
-    def wait_for_timer_completion(self, watch_time, force_youtube_timer=False) -> bool:
-        """Ожидание завершения таймера с контролем воспроизведения"""
-        import logging, time, random
-        from selenium.webdriver.common.by import By
-
-        logging.info("⏱ Ожидание завершения таймера...")
-
-        try:
-            start_time = time.time()
-            aviso_timer_found = False
-            youtube_timer_iframe = None
-            youtube_timer_element = None
-            last_time = -1
-            same_value_counter = 0
-            video_was_playing = False
-            restart_attempts = 0
-            video_started_logged = False
-
-            def find_youtube_timer():
-                nonlocal youtube_timer_iframe, youtube_timer_element
-                try:
-                    timer_check = self.driver.execute_script("""
-                        var timer = document.querySelector('span.ytp-time-current');
-                        if (timer && timer.offsetParent !== null) {
-                            return {found: true, location: 'main_document', element: timer};
-                        }
-                        return {found: false};
-                    """)
-                    if timer_check['found']:
-                        logging.info("⏱ YouTube-таймер найден в главном документе")
-                        youtube_timer_element = timer_check['element']
-                        return True
-
-                    iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
-                    for i, iframe in enumerate(iframes):
-                        try:
-                            src = iframe.get_attribute('src') or ''
-                            if 'youtube.com' not in src:
-                                continue
-                            self.driver.switch_to.frame(iframe)
-                            timer_check = self.driver.execute_script("""
-                                var timer = document.querySelector('span.ytp-time-current');
-                                if (timer && timer.offsetParent !== null) {
-                                    return {found: true, location: 'iframe_' + arguments[0], element: timer};
-                                }
-                                return {found: false};
-                            """, str(i))
-                            if timer_check['found']:
-                                logging.info(f"⏱ YouTube-таймер найден в iframe #{i}")
-                                youtube_timer_iframe = iframe
-                                youtube_timer_element = timer_check['element']
-                                return True
-                        except:
-                            self.driver.switch_to.default_content()
-                            continue
-                        finally:
-                            self.driver.switch_to.default_content()
-
-                    shadow_check = self.driver.execute_script("""
-                        function searchShadowRoots(node) {
-                            if (node.shadowRoot) {
-                                var timer = node.shadowRoot.querySelector('span.ytp-time-current');
-                                if (timer && timer.offsetParent !== null) {
-                                    return {found: true, location: 'shadow_dom'};
-                                }
-                            }
-                            var children = node.children;
-                            for (var i = 0; i < children.length; i++) {
-                                var result = searchShadowRoots(children[i]);
-                                if (result.found) return result;
-                            }
-                            return {found: false};
-                        }
-                        return searchShadowRoots(document.body);
-                    """)
-                    if shadow_check['found']:
-                        logging.info("⏱ YouTube-таймер найден в Shadow DOM")
-                        return True
-                    return False
-                except Exception as e:
-                    logging.debug(f"⚠ Ошибка поиска YouTube-таймера: {e}")
-                    return False
-
-            while True:
-                if not self.handle_youtube_ads():
-                    logging.error("❌ Не удалось обработать рекламу")
-                    return False
-
-                if self.check_antibot_protection():
-                    logging.info("🚫 Антибот защита обнаружена")
-                    return True
-
-                if not force_youtube_timer:
-                    timer_status = self.driver.execute_script("""
-                        var timerElement = document.querySelector('span.timer#tmr');
-                        if (timerElement) {
-                            var timerText = timerElement.textContent.trim();
-                            if (/^\\d+$/.test(timerText)) {
-                                return {status: 'timer_found', value: parseInt(timerText)};
-                            }
-                        }
-
-                        var completionElements = document.querySelectorAll('span');
-                        for (var i = 0; i < completionElements.length; i++) {
-                            var text = completionElements[i].textContent;
-                            if (text.includes('Задача выполнена') && text.includes('начислено')) {
-                                return {status: 'completed', message: text.trim()};
-                            }
-                        }
-
-                        return {status: 'not_found'};
-                    """)
-
-                    if timer_status['status'] == 'completed':
-                        logging.info(f"✅ Задание завершено: {timer_status['message']}")
-                        return True
-
-                    if timer_status['status'] == 'timer_found':
-                        aviso_timer_found = True
-                        current_time = timer_status['value']
-
-                        if (time.time() - start_time) % 5 < 1:
-                            logging.info(f"⏰ Таймер Aviso: {current_time}с")
-
-                        if last_time == current_time:
-                            same_value_counter += 1
-                            if same_value_counter >= 5:
-                                if video_was_playing:
-                                    restart_attempts += 1
-                                    logging.warning(f"⏸ Видео остановилось! Попытка перезапуска {restart_attempts}/3")
-                                    if restart_attempts >= 3:
-                                        logging.error("💥 Видео не перезапускается! Обновляем страницу...")
-                                        self.driver.refresh()
-                                        time.sleep(2)
-                                        self.handle_youtube_ads()
-                                        restart_attempts = 0
-                                        video_was_playing = False
-                                        video_started_logged = False
-                                        last_time = -1
-                                        same_value_counter = 0
-                                        continue
-                                else:
-                                    if not video_started_logged:
-                                        logging.warning("⏸ Видео на паузе! Запускаем...")
-                                self.click_center_screen()
-                                same_value_counter = 0
-                        else:
-                            if same_value_counter > 0:
-                                if not video_started_logged:
-                                    logging.info("▶ Видео запустилось")
-                                    video_started_logged = True
-                                video_was_playing = True
-                                restart_attempts = 0
-                            same_value_counter = 0
-
-                        last_time = current_time
-
-                        if current_time <= 0:
-                            logging.info("✅ Таймер Aviso достиг нуля")
-                            break
-
-                if force_youtube_timer or not aviso_timer_found:
-                    if youtube_timer_element is None:
-                        if not find_youtube_timer():
-                            logging.warning("⚠ YouTube-таймер не найден, продолжаем пытаться...")
-                            time.sleep(0.5)
-                            continue
-
-                    try:
-                        if youtube_timer_iframe:
-                            self.driver.switch_to.frame(youtube_timer_iframe)
-                        current_time_text = self.driver.execute_script("""
-                            var timer = document.querySelector('span.ytp-time-current');
-                            return timer ? timer.textContent.trim() : null;
-                        """)
-                        if youtube_timer_iframe:
-                            self.driver.switch_to.default_content()
-
-                        if current_time_text:
-                            time_parts = current_time_text.split(':')
-                            current_time = 0
-                            if len(time_parts) == 3:
-                                current_time = int(time_parts[0]) * 3600 + int(time_parts[1]) * 60 + int(time_parts[2])
-                            elif len(time_parts) == 2:
-                                current_time = int(time_parts[0]) * 60 + int(time_parts[1])
-
-                            if (time.time() - start_time) % 5 < 1:
-                                logging.info(f"⏰ YouTube-таймер: {current_time}с")
-
-                            if last_time == current_time:
-                                same_value_counter += 1
-                                if same_value_counter >= 5:
-                                    if video_was_playing:
-                                        restart_attempts += 1
-                                        logging.warning(f"⏸ Видео остановилось! Попытка перезапуска {restart_attempts}/3")
-                                        if restart_attempts >= 3:
-                                            logging.error("💥 Видео не перезапускается! Обновляем страницу...")
-                                            self.driver.refresh()
-                                            time.sleep(2)
-                                            self.handle_youtube_ads()
-                                            restart_attempts = 0
-                                            video_was_playing = False
-                                            video_started_logged = False
-                                            last_time = -1
-                                            same_value_counter = 0
-                                            youtube_timer_element = None
-                                            youtube_timer_iframe = None
-                                            continue
-                                    else:
-                                        if not video_started_logged:
-                                            logging.warning("⏸ Видео на паузе! Запускаем...")
-                                        self.click_center_screen()
-                                        same_value_counter = 0
-                            else:
-                                if same_value_counter > 0:
-                                    if not video_started_logged:
-                                        logging.info("▶ Видео запустилось")
-                                        video_started_logged = True
-                                    video_was_playing = True
-                                    restart_attempts = 0
-                                same_value_counter = 0
-
-                            last_time = current_time
-
-                            if current_time >= watch_time:
-                                logging.info("✅ YouTube-таймер достиг требуемого времени")
-                                break
-                        else:
-                            logging.warning("⚠ YouTube-таймер пропал, ищем заново...")
-                            youtube_timer_element = None
-                            youtube_timer_iframe = None
-                            continue
-                    except Exception as e:
-                        logging.debug(f"⚠ Ошибка чтения YouTube-таймера: {e}")
-                        youtube_timer_element = None
-                        youtube_timer_iframe = None
-                        continue
-
-                time.sleep(0.5)
-
-                if time.time() - start_time > 600:
-                    logging.warning("⏰ Превышено время ожидания")
-                    return False
-
-            extra_wait = random.uniform(1, 20)
-            logging.info(f"⏳ Дополнительная случайная пауза: {extra_wait:.1f}с")
-            time.sleep(extra_wait)
-
-            final_check = self.driver.execute_script("""
-                var completionElements = document.querySelectorAll('span');
-                for (var i = 0; i < completionElements.length; i++) {
-                    var text = completionElements[i].textContent;
-                    if (text.includes('Задача выполнена') && text.includes('начислено')) {
-                        return text.trim();
-                    }
-                }
-                return null;
-            """)
-
-            if final_check:
-                logging.info(f"✅ Подтверждение: {final_check}")
-
-            return True
-
-        except Exception as e:
-            logging.error(f"❌ Ошибка таймера: {e}")
-            return False
-        finally:
-            try:
-                self.driver.switch_to.default_content()
-            except:
-                pass
-
+# YouTubeTaskHandler class removed - YouTube functionality disabled
 class SurfTaskHandler:
     """Класс для обработки заданий на серфинг"""
     
@@ -4003,25 +2550,25 @@ class AvisoAutomation:
     def __init__(self):
         self.setup_logging()
         self.driver = None
-        self.tor_manager = SimpleTorManager()
+        # self.tor_manager removed - browser now works without Tor
         self.ua_manager = UserAgentManager()
         self.gecko_manager = GeckoDriverManager()
         self.gpt_manager = GPTManager()
         self.task_coordinator = TaskCoordinator()
-        self.original_ip = None
+        # self.original_ip removed - no longer checking IP
         
         # Данные для авторизации
         self.username = "aleksey836"
         self.password = "123456"
         self.base_url = "https://aviso.bz"
         
-        # РЕОРГАНИЗАЦИЯ: Создаем обработчики задач
-        self.youtube_handler = None
+        # Task handlers - removed YouTube handler
+        # self.youtube_handler = None - removed
         self.surf_handler = None
         self.letter_handler = None
         self.login_handler = None
         
-        logging.info("🚀 Запуск улучшенного Aviso Bot")
+        logging.info("🚀 Запуск Aviso Bot без Tor")
         
     def setup_logging(self):
         """Настройка логирования"""
@@ -4040,48 +2587,7 @@ class AvisoAutomation:
             ]
         )
 
-    def get_current_ip_without_proxy(self) -> Optional[str]:
-        """Получение внешнего IP без прокси"""
-        test_services = [
-            'https://api.ipify.org?format=text',
-            'https://icanhazip.com/',
-            'https://checkip.amazonaws.com/'
-        ]
-        
-        for service in test_services:
-            try:
-                response = requests.get(service, timeout=10)
-                response.raise_for_status()
-                external_ip = response.text.strip()
-                
-                import re
-                if re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', external_ip):
-                    return external_ip
-            except:
-                continue
-        
-        return None
-
-    def verify_ip_change_via_2ip(self) -> bool:
-        """Проверка смены IP через 2ip.ru"""
-        try:
-            self.driver.get("https://2ip.ru")
-            time.sleep(3)  # Ускорено
-            
-            ip_element = self.driver.find_element(By.CSS_SELECTOR, "div.ip span")
-            current_ip = ip_element.text.strip()
-            logging.info(f"🔍 IP: {current_ip}")
-            
-            if self.original_ip and current_ip == self.original_ip:
-                logging.error("❌ IP не сменился! Tor не работает!")
-                return False
-            else:
-                logging.info("✅ IP сменился")
-                return True
-                
-        except Exception as e:
-            logging.error(f"❌ Ошибка проверки IP: {e}")
-            return False
+    # IP checking methods removed - no longer needed without Tor
 
     def find_firefox_binary(self) -> Optional[str]:
         """Поиск Firefox"""
@@ -4119,23 +2625,8 @@ class AvisoAutomation:
         return None
 
     def setup_driver(self) -> bool:
-        """Настройка Firefox с ОБЯЗАТЕЛЬНЫМ Tor"""
-        logging.info("🌐 Настройка браузера с обязательным Tor...")
-        
-        self.original_ip = self.get_current_ip_without_proxy()
-        
-        # Попытки запуска Tor - ТАЙМАУТЫ НЕ ИЗМЕНЕНЫ
-        for attempt in range(3):
-            logging.info(f"🔄 Попытка запуска Tor {attempt + 1}/3")
-            if self.tor_manager.start_tor():
-                logging.info("✅ Tor запущен успешно")
-                break
-            else:
-                logging.error(f"❌ Попытка {attempt + 1} не удалась")
-                if attempt == 2:
-                    logging.error("💥 Не удалось запустить Tor после 3 попыток. ЗАВЕРШЕНИЕ РАБОТЫ.")
-                    sys.exit(1)
-                time.sleep(10)  # ТАЙМАУТ НЕ ИЗМЕНЕН
+        """Настройка Firefox без Tor"""
+        logging.info("🌐 Настройка браузера без Tor...")
         
         try:
             user_agent = self.ua_manager.get_user_agent(self.username)
@@ -4143,16 +2634,8 @@ class AvisoAutomation:
             
             firefox_options = Options()
             
-            # ОБЯЗАТЕЛЬНАЯ настройка Tor прокси
-            firefox_options.set_preference("network.proxy.type", 1)
-            firefox_options.set_preference("network.proxy.socks", "127.0.0.1")
-            firefox_options.set_preference("network.proxy.socks_port", self.tor_manager.tor_port)
-            firefox_options.set_preference("network.proxy.socks_version", 5)
-            firefox_options.set_preference("network.proxy.socks_remote_dns", True)
-            firefox_options.set_preference("network.proxy.http", "")
-            firefox_options.set_preference("network.proxy.http_port", 0)
-            firefox_options.set_preference("network.proxy.ssl", "")
-            firefox_options.set_preference("network.proxy.ssl_port", 0)
+            # Настройка без прокси (обычное подключение)
+            firefox_options.set_preference("network.proxy.type", 0)  # No proxy
             
             firefox_options.set_preference("general.useragent.override", user_agent)
             firefox_options.set_preference("dom.webdriver.enabled", False)
@@ -4178,7 +2661,11 @@ class AvisoAutomation:
             firefox_options.set_preference("toolkit.telemetry.enabled", False)
             firefox_options.set_preference("datareporting.healthreport.uploadEnabled", False)
             
-            if self.tor_manager.is_termux:
+            # Check if running in Termux (still needed for sandbox options)
+            system = platform.system().lower()
+            is_termux = 'com.termux' in os.environ.get('PREFIX', '') or '/data/data/com.termux' in os.environ.get('HOME', '')
+            
+            if is_termux:
                 firefox_options.add_argument("--no-sandbox")
                 firefox_options.add_argument("--disable-dev-shm-usage")
             
@@ -4189,8 +2676,8 @@ class AvisoAutomation:
             service = Service(executable_path=geckodriver_path)
             self.driver = webdriver.Firefox(options=firefox_options, service=service)
             
-            self.driver.set_page_load_timeout(60)  # ТАЙМАУТ НЕ ИЗМЕНЕН
-            self.driver.implicitly_wait(10)  # ТАЙМАУТ НЕ ИЗМЕНЕН
+            self.driver.set_page_load_timeout(60)
+            self.driver.implicitly_wait(10)
             
             if "Android" in user_agent:
                 mobile_sizes = [(360, 640), (375, 667), (414, 896), (393, 851)]
@@ -4200,15 +2687,10 @@ class AvisoAutomation:
                 width, height = random.choice(ipad_sizes)
             
             self.driver.set_window_size(width, height)
-            logging.info("✅ Браузер запущен с Tor")
+            logging.info("✅ Браузер запущен без Tor")
             
-            # ОБЯЗАТЕЛЬНАЯ проверка смены IP
-            if not self.verify_ip_change_via_2ip():
-                logging.error("❌ IP не сменился! Tor не работает правильно. ЗАВЕРШЕНИЕ.")
-                sys.exit(1)
-            
-            # РЕОРГАНИЗАЦИЯ: Инициализируем обработчики задач
-            self.youtube_handler = YouTubeTaskHandler(self.driver, self.base_url)
+            # Инициализируем обработчики задач (без YouTube)
+            # self.youtube_handler - removed
             self.surf_handler = SurfTaskHandler(self.driver, self.base_url)
             self.letter_handler = LetterTaskHandler(self.driver, self.base_url, self.gpt_manager)
             self.login_handler = LoginHandler(self.driver, self.base_url, self.username, self.password)
@@ -4232,9 +2714,7 @@ class AvisoAutomation:
                 attempt_count += 1
             
                 # ПОВТОРНЫЙ парсинг заданий перед каждой попыткой
-                if task_type == 'youtube':
-                    tasks = self.youtube_handler.get_tasks()
-                elif task_type == 'surf':
+                if task_type == 'surf':
                     tasks = self.surf_handler.get_tasks()
                     
                     # ПРАВИЛЬНАЯ ПРОВЕРКА: Все ли оставшиеся задания имеют ошибки
@@ -4250,6 +2730,7 @@ class AvisoAutomation:
                 elif task_type == 'letters':
                     tasks = self.letter_handler.get_tasks()
                 else:
+                    logging.warning(f"⚠ Неизвестный тип заданий: {task_type}")
                     break
             
                 if not tasks:
@@ -4264,9 +2745,7 @@ class AvisoAutomation:
             
                 # Выполняем задание
                 success = False
-                if task_type == 'youtube':
-                    success = self.youtube_handler.execute_task(task)
-                elif task_type == 'surf':
+                if task_type == 'surf':
                     success = self.surf_handler.execute_task(task)
                 elif task_type == 'letters':
                     success = self.letter_handler.execute_task(task)
@@ -4410,10 +2889,7 @@ class AvisoAutomation:
         except:
             pass
         
-        try:
-            self.tor_manager.stop_tor()
-        except:
-            pass
+        # Tor cleanup removed - no longer using Tor
     
     def run_cycle(self) -> bool:
         """Один полный цикл работы"""
@@ -4461,18 +2937,14 @@ class AvisoAutomation:
     
     def run(self):
         """Основной бесконечный цикл"""
-        logging.info("🤖 ЗАПУСК УЛУЧШЕННОГО AVISO BOT")
-        logging.info("🆕 УЛУЧШЕНИЯ:")
-        logging.info("   ✅ Реорганизация кода в отдельные классы")
-        logging.info("   ✅ Обработка антибот защиты YouTube")
-        logging.info("   ✅ Исправление ошибки 'frame_status' is not defined")
-        logging.info("   ✅ Убрана прокрутка при чтении писем")
-        logging.info("   ✅ В 2 раза уменьшено время чтения")
-        logging.info("   ✅ Максимальная оптимизация и ускорение")
-        logging.info("   ✅ Уменьшены случайные задержки")
-        logging.info("   ✅ Сохранены все таймауты без преждевременных завершений")
-        logging.info("   ✅ Добавлена обработка ошибок заявок (.start-error-serf)")
-        logging.info("   ✅ Добавлено закрытие лишних вкладок после писем")
+        logging.info("🤖 ЗАПУСК AVISO BOT БЕЗ TOR")
+        logging.info("🆕 ИЗМЕНЕНИЯ:")
+        logging.info("   ✅ Убрано подключение к Tor")
+        logging.info("   ✅ Убрана проверка смены IP")
+        logging.info("   ✅ Убраны YouTube задания")
+        logging.info("   ✅ Оставлены только серфинг и чтение писем")
+        logging.info("   ✅ Браузер работает без прокси")
+        logging.info("   ✅ Сохранена вся остальная функциональность")
         
         cycle_count = 0
         consecutive_failures = 0
@@ -4528,34 +3000,30 @@ class AvisoAutomation:
 
 def main():
     """Точка входа в программу"""
-    print("🤖 Aviso Automation Bot - УЛУЧШЕННАЯ ВЕРСИЯ")
+    print("🤖 Aviso Automation Bot - БЕЗ TOR")
     print("=" * 80)
-    print("🆕 УЛУЧШЕНИЯ В ЭТОЙ ВЕРСИИ:")
-    print("   ✅ Реорганизация кода в отдельные классы для каждого типа заданий")
-    print("   ✅ Обработка антибот защиты YouTube - засчитывание всех заданий")
-    print("   ✅ ИСПРАВЛЕНИЕ: Ошибка 'frame_status' is not defined")
-    print("   ✅ УБРАНА прокрутка страницы при имитации чтения писем")
-    print("   ✅ В 2 РАЗА уменьшено время чтения писем")
-    print("   ✅ Максимальная оптимизация и ускорение работы")
-    print("   ✅ Уменьшены случайные задержки и движения мыши")
-    print("   ✅ ВАЖНО: Сохранены все таймауты без преждевременных завершений")
+    print("🆕 ИЗМЕНЕНИЯ В ЭТОЙ ВЕРСИИ:")
+    print("   ✅ УБРАНО подключение к Tor")
+    print("   ✅ УБРАНА проверка смены IP")
+    print("   ✅ УБРАНЫ YouTube задания")
+    print("   ✅ Браузер работает без прокси")
+    print("   ✅ Оставлены только серфинг и чтение писем")
+    print("   ✅ Сохранена вся остальная функциональность")
     print("🚀 Автоматический запуск...")
     print("⚠  ВНИМАНИЕ: Используйте бота ответственно!")
-    print("🔒 БОТ РАБОТАЕТ ТОЛЬКО ЧЕРЕЗ TOR!")
+    print("🌐 БОТ РАБОТАЕТ БЕЗ TOR ПРОКСИ!")
     print("📋 Функции:")
     print("   - Автоматическая авторизация на aviso.bz")
-    print("   - Выполнение заданий YouTube с обработкой антибот защиты")
     print("   - Выполнение заданий на серфинг сайтов")
     print("   - Выполнение заданий на чтение писем с ИИ")
     print("   - Случайный выбор типов заданий")
     print("   - Имитация человеческого поведения")
-    print("   - Работа ТОЛЬКО через Tor прокси")
-    print("   - Проверка смены IP через 2ip.ru")
+    print("   - Работа через обычное интернет-соединение")
     print("   - Автоматическая установка geckodriver")
     print("   - Автоматическая установка g4f для GPT-4")
     print("   - Случайный User-Agent для аккаунта")
     print("   - Улучшенная имитация опечаток при вводе")
-    print("   - Расчет времени чтения для pisем")
+    print("   - Расчет времени чтения для писем")
     print("   - Поддержка Termux/Android")
     print("=" * 80)
     print()
