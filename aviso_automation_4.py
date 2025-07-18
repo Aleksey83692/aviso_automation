@@ -2593,24 +2593,28 @@ class AvisoAutomation:
         """Поиск Firefox"""
         possible_paths = []
         
-        if self.tor_manager.is_termux:
+        # Detect system and termux without tor_manager
+        system = platform.system().lower()
+        is_termux = 'com.termux' in os.environ.get('PREFIX', '') or '/data/data/com.termux' in os.environ.get('HOME', '')
+        
+        if is_termux:
             possible_paths = [
                 '/data/data/com.termux/files/usr/bin/firefox',
                 f"{os.environ.get('PREFIX', '')}/bin/firefox"
             ]
-        elif self.tor_manager.system == 'linux':
+        elif system == 'linux':
             possible_paths = [
                 '/usr/bin/firefox',
                 '/usr/local/bin/firefox',
                 '/opt/firefox/firefox',
                 '/snap/bin/firefox'
             ]
-        elif self.tor_manager.system == 'windows':
+        elif system == 'windows':
             possible_paths = [
                 r"C:\Program Files\Mozilla Firefox\firefox.exe",
                 r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
             ]
-        elif self.tor_manager.system == 'darwin':
+        elif system == 'darwin':
             possible_paths = [
                 '/Applications/Firefox.app/Contents/MacOS/firefox'
             ]
@@ -2619,8 +2623,17 @@ class AvisoAutomation:
             if os.path.exists(path) and os.access(path, os.X_OK):
                 return path
         
-        if self.tor_manager.command_exists('firefox'):
-            return 'firefox'
+        # Check if firefox command exists in PATH
+        try:
+            if system == 'windows':
+                result = subprocess.run(['where', 'firefox'], capture_output=True, text=True)
+            else:
+                result = subprocess.run(['which', 'firefox'], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return 'firefox'
+        except:
+            pass
         
         return None
 
